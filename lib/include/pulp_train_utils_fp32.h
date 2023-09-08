@@ -59,6 +59,10 @@ struct blob {
  * @param stride_h sets the amount of vertical stride
  * @param HWC sets if the format of the input (mod=0) or output grad (mod=1) is CHW (HWC=0) or HWC (HWC=1). In case of HWC, channels of the same "pixel" are adjacent, while in CHW the width elements are adjacent. Set this according to the format of your own input or output format (check format!) 
  * @param USE_DMA set this to 1 if your tensor data is in L2 and you want to im2col that data into local L1 stored im2colbuffer, using cluster DMA
+ * @param htile_start sets the starting "pixel" for doing partial im2col or im2row (H dimension for input or output)
+ * @param htile_end sets the starting "pixel" for doing partial im2col or im2row (H dimension for input or output)
+ * @param wtile_start sets the starting "pixel" for doing partial im2col or im2row (W dimension for input or output)
+ * @param wtile_end sets the starting "pixel" for doing partial im2col or im2row (W dimension for input or output)
  */
 struct im2col_args
 {
@@ -75,6 +79,10 @@ struct im2col_args
   int stride_h;
   int HWC;
   int USE_DMA;
+  int htile_start;
+  int htile_end;
+  int wtile_start;
+  int wtile_end;
 };
 
 
