@@ -168,6 +168,7 @@ void pulp_im2row_fp32(void * im2col_args){
                 }
               }
               pwo++;
+              if (pwo == wt_stop) pwo = 0;
             }
             pho++;
           }          
