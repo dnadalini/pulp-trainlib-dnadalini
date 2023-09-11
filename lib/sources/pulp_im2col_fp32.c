@@ -652,9 +652,9 @@ void pulp_im2col_fp32(void * im2col_args){
 
         if (padding == 0) {
           //for (uint32_t ho=0; ho<Htot/*Ho+2*pad*/; ho++) {
-          for (uint32_t ho=ht_start; ho<=ht_stop/*Ho+2*pad*/; ho++) {
+          for (uint32_t ho=ht_start; ho<ht_stop/*Ho+2*pad*/; ho++) {
             //for (uint32_t wo=0; wo<Wtot/*Wo+2*pad*/; wo++) {
-            for (uint32_t wo=wt_start; wo<=wt_stop/*Wo+2*pad*/; wo++) {
+            for (uint32_t wo=wt_start; wo<wt_stop/*Wo+2*pad*/; wo++) {
               for (uint32_t ci=start; ci<stop; ci++) {
                 // IM2COL buffer coordinates
                 uint32_t kernel_idx = ci*Htot*Wtot*Hk*Wk;
@@ -676,6 +676,7 @@ void pulp_im2col_fp32(void * im2col_args){
                 }
               }
               pwo++;
+              if (pwo == wt_stop) pwo = 0;
             }
             pho++;
           }          
@@ -766,6 +767,7 @@ void pulp_im2col_fp32(void * im2col_args){
               }
             }
             pwi++;
+            if (pwi == wt_stop) pwi = 0;
           }
           phi++;
         }
