@@ -354,7 +354,7 @@ void pulp_im2row_fp32(void * im2col_args){
         // Partial im2row indices
         uint32_t phi = 0; uint32_t pwi = 0;  
         // Recompute start and stop indices per core
-        blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
+        int blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
         start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
         stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
@@ -856,7 +856,7 @@ void pulp_im2col_fp32(void * im2col_args){
         // Partial im2row indices
         uint32_t phi = 0; uint32_t pwi = 0;  
         // Recompute start and stop indices per core
-        blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
+        int blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
         start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
         stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
