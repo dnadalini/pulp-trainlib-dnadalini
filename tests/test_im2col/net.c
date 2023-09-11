@@ -135,7 +135,7 @@ static inline void train ()
         im2col_args.Upad = UPAD;
         im2col_args.Dpad = DPAD;
         im2col_args.pBuffer = im2col_buffer;
-        #ifdef DATA_BITS == 32
+        #if DATA_BITS == 32
         #if PARTIAL == 1
         im2col_args.htile_start = h_start;
         im2col_args.htile_end = h_stop;
@@ -154,7 +154,7 @@ static inline void train ()
         im2col_args.Upad = PAD_BW;
         im2col_args.Dpad = PAD_BW; 
         im2col_args.pBuffer = im2col_buffer_bw;
-        #ifdef DATA_BITS == 32
+        #if DATA_BITS == 32
         #if PARTIAL == 1
         im2col_args.htile_start = h_start;
         im2col_args.htile_end = h_stop;

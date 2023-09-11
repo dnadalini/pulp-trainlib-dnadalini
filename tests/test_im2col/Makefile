@@ -2,9 +2,9 @@ APP = im2col_fp32
 
 # User settings
 DATA_BITS?=32				# 32=FP32, 16=FP16
-NUM_CORES?=8
+NUM_CORES?=1
 IM2ROW?=0					# 0=Im2Col, 1=Im2Row
-MOD?=1 						# 0=Forward/WeightGrad, 1=InGrad
+MOD?=0 						# 0=Forward/WeightGrad, 1=InGrad
 DMA_ENABLE?=0				# Use Cluster DMA to move data or not
 HWC_format?=0				# CHW (=0) or HWC (=1) data format for the im2col
 # Layer padding and stride
@@ -21,11 +21,11 @@ Tin_C_l1?=2
 Tker_W_l1?=2
 Tout_C_l1?=2
 # Partial im2col coordinates
-PARTIAL?=0				# =0 disables partial im2col, =1 enables it
+PARTIAL?=1				# =0 disables partial im2col, =1 enables it
 h_start?=0
-h_stop?=$(Tin_H_l1)
+h_stop?=3 #$(Tin_H_l1)
 w_start?=0
-w_stop?=$(Tin_W_l1)
+w_stop?=3 #$(Tin_W_l1)
 # Visualization
 APP_CFLAGS += -DPRINT_OUTPUT
 # End of user settings
