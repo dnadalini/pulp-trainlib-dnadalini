@@ -162,8 +162,8 @@ void pulp_im2row_fp32(void * im2col_args){
                     uint32_t in_inner_idx = wk + hk*Win;
 
                     i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
-                    printf("(ho=%d, wo=%d) i2c_buf[%d] = %f, indata[%d] = %f\n", ho, wo, kernel_idx+segment_idx+i2c_inner_idx, 
-                              i2c_buf[kernel_idx+segment_idx+i2c_inner_idx], receptive_field_idx+in_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
+                    //printf("(ho=%d, wo=%d) i2c_buf[%d] = %f, indata[%d] = %f\n", ho, wo, kernel_idx+segment_idx+i2c_inner_idx, 
+                    //          i2c_buf[kernel_idx+segment_idx+i2c_inner_idx], receptive_field_idx+in_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
                   }
                 }
               }
@@ -210,6 +210,7 @@ void pulp_im2row_fp32(void * im2col_args){
                 }
               }
               pwo++;
+              if (pwo == wt_stop) pwo = 0;
             }
             pho++;
           }
@@ -259,6 +260,7 @@ void pulp_im2row_fp32(void * im2col_args){
               }
             }
             pwi++;
+            if (pwi == wt_stop) pwi = 0;
           }
           phi++;
         }

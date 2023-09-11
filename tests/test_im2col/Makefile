@@ -22,7 +22,7 @@ Tker_W_l1?=2
 Tout_C_l1?=2
 # Partial im2col coordinates
 PARTIAL?=1				# =0 disables partial im2col, =1 enables it
-h_start?=0
+h_start?=1
 h_stop?=2
 w_start?=0
 w_stop?=2
