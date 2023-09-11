@@ -293,7 +293,7 @@ void pulp_im2row_fp32(void * im2col_args){
         // Partial im2row indices
         uint32_t pho = 0; uint32_t pwo = 0;
         // Recompute parallel indices per core
-        int blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
+        int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
         start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
         stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
@@ -320,6 +320,7 @@ void pulp_im2row_fp32(void * im2col_args){
                 }
               }
               pwo++;
+              if (pwo == wt_stop) pwo = 0;
             }
             pho++;
           }
@@ -359,7 +360,7 @@ void pulp_im2row_fp32(void * im2col_args){
         // Partial im2row indices
         uint32_t phi = 0; uint32_t pwi = 0;  
         // Recompute start and stop indices per core
-        int blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
+        int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
         start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
         stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
@@ -409,6 +410,7 @@ void pulp_im2row_fp32(void * im2col_args){
               }
             }
             pwi++;
+            if (pwi == wt_stop) pwi = 0;
           }
           phi++;
         }
@@ -718,6 +720,7 @@ void pulp_im2col_fp32(void * im2col_args){
                 }
               }
               pwo++;
+              if (pwo == wt_stop) pwo = 0;
             }
             pho++;
           }
@@ -799,7 +802,7 @@ void pulp_im2col_fp32(void * im2col_args){
         // Partial im2row indices
         uint32_t pho = 0; uint32_t pwo = 0;
         // Recompute parallel indices per core
-        int blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
+        int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
         start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
         stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
@@ -826,6 +829,7 @@ void pulp_im2col_fp32(void * im2col_args){
                 }
               }
               pwo++;
+              if (pwo == wt_stop) pwo = 0;
             }
             pho++;
           }
@@ -865,7 +869,7 @@ void pulp_im2col_fp32(void * im2col_args){
         // Partial im2row indices
         uint32_t phi = 0; uint32_t pwi = 0;  
         // Recompute start and stop indices per core
-        int blockSize = ((ht_stop-ht_start)+NUM_CORES-1) / NUM_CORES;
+        int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
         start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
         stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
@@ -916,6 +920,7 @@ void pulp_im2col_fp32(void * im2col_args){
               }
             }
             pwi++;
+            if (pwi == wt_stop) pwi = 0;
           }
           phi++;
         }

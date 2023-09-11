@@ -56,6 +56,17 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
     int USE_DMA = C2D_args->USE_DMA_IM2COL;
     int opt_matmul_type = C2D_args->opt_matmul_type_fw;
 
+    // Parameters for partial im2col
+    int max_h_i2c = C2D_args->max_h_i2c;
+    int max_w_i2c = C2D_args->max_w_i2c;
+    // Iteration variables
+    int h_iter = H_out / max_h_i2c;
+    int h_leftover = H_out % max_h_i2c;
+    int w_iter = W_out / max_w_i2c;
+    int w_leftover = W_out % max_w_i2c;
+
+    printf("h_iter = %d\nh_leftover = %d\nw_iter = %d\nw_leftover = %d", h_iter, h_leftover, w_iter, w_leftover);
+
   /**
    * USE OPTIMIZED ALGORITHM
    */
@@ -65,41 +76,62 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
        * USE CHW LAYOUT
        */
       if (HWC_layout == 0) {
-        // im2col on the input data
-        im2col_args.input = C2D_args->input;
-        im2col_args.c = C2D_args->coeff;
-        im2col_args.output = C2D_args->output;
-        im2col_args.pBuffer = i2c_buffer;
-        im2col_args.Lpad = Lpad;
-        im2col_args.Rpad = Rpad;
-        im2col_args.Upad = Upad;
-        im2col_args.Dpad = Dpad;
-        im2col_args.mod = 0;
-        im2col_args.stride_w = stride_w;
-        im2col_args.stride_h = stride_h;
-        im2col_args.USE_DMA = USE_DMA;
-        im2col_args.HWC = HWC_layout;
 
-        pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+        // PARTIAL IM2COL LOOPS
+        for (int h_idx=0; h_idx<h_iter; h_idx++) {
+          for (int w_idx=0; w_idx<w_iter; w_idx++) {
 
-        matMul_args.A = coeffData;
-        matMul_args.B = i2c_buffer;
-        matMul_args.C = outData;
-        matMul_args.N = C_out;
-        matMul_args.K = pW*pH*C_in;
-        matMul_args.M = (W_in-pW+stride_w+Lpad+Rpad)/stride_w*(H_in-pH+stride_h+Upad+Dpad)/stride_h;
-        matMul_args.trans_B = 1;
+            // im2col on the input data
+            im2col_args.input = C2D_args->input;
+            im2col_args.c = C2D_args->coeff;
+            im2col_args.output = C2D_args->output;
+            im2col_args.pBuffer = i2c_buffer;
+            im2col_args.Lpad = Lpad;
+            im2col_args.Rpad = Rpad;
+            im2col_args.Upad = Upad;
+            im2col_args.Dpad = Dpad;
+            im2col_args.mod = 0;
+            im2col_args.stride_w = stride_w;
+            im2col_args.stride_h = stride_h;
+            im2col_args.USE_DMA = USE_DMA;
+            im2col_args.HWC = HWC_layout;
+            // Partial im2col variables
+            im2col_args.htile_start = h_idx*h_iter;
+            im2col_args.htile_end = (h_idx+1)*h_iter;
+            im2col_args.wtile_start = w_idx*w_iter;
+            im2col_args.wtile_end = (w_idx+1)*w_iter;
 
-        #ifndef OPTIMIZE
-        pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-        #else
-        struct mm_manager_args man_args;
-        man_args.mm_args = &matMul_args;
-        man_args.layer_type = LAYER_CONV2D;
-        man_args.step_type = STEP_FW;
-        man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-        pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-        #endif
+            pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+
+            matMul_args.A = coeffData;
+            matMul_args.B = i2c_buffer;
+            matMul_args.C = outData;
+            matMul_args.N = C_out;
+            matMul_args.K = pW*pH*C_in;
+            matMul_args.M = H_out*W_out;
+            matMul_args.trans_B = 1;
+
+            #ifndef OPTIMIZE
+            pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
+            #else
+            struct mm_manager_args man_args;
+            man_args.mm_args = &matMul_args;
+            man_args.layer_type = LAYER_CONV2D;
+            man_args.step_type = STEP_FW;
+            man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
+            pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
+            #endif
+          
+          }
+          if (w_leftover > 0) {
+            // LEFTOVERS IN THE INNER LOOP
+          }
+        }
+        if (h_leftover > 0) {
+          // LEFTOVERS IN THE OUTER LOOP
+        }
+        // END OF PARTIAL IM2COL LOOPS
+
       }
 
     /**

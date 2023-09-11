@@ -6,7 +6,7 @@ NUM_CORES?=8
 IM2ROW?=0					# 0=Im2Col, 1=Im2Row
 MOD?=1 						# 0=Forward/WeightGrad, 1=InGrad
 DMA_ENABLE?=0				# Use Cluster DMA to move data or not
-HWC_format?=0				# CHW (=0) or HWC (=1) data format for the im2col
+HWC_format?=1				# CHW (=0) or HWC (=1) data format for the im2col
 # Layer padding and stride
 LPAD?=0
 RPAD?=0
@@ -25,7 +25,7 @@ PARTIAL?=1				# =0 disables partial im2col, =1 enables it
 h_start?=0
 h_stop?=2
 w_start?=0
-w_stop?=3
+w_stop?=2
 # Visualization
 APP_CFLAGS += -DPRINT_OUTPUT
 # End of user settings
