@@ -74,10 +74,11 @@ void pulp_im2row_fp32(void * im2col_args){
   uint32_t wt_start = args->wtile_start;
   uint32_t wt_stop = args->wtile_end;
   // Check bindings
-  if (ht_start < 0) printf("Invalid partial im2col boundary on the upper side!!");
-  if (ht_stop > Htot) printf("Invalid partial im2col boundary on the lower side!!");
-  if (wt_start < 0) printf("Invalid partial im2col boundary on the left!!");
-  if (wt_stop > Wtot) printf("Invalid partial im2col boundary on the right!!");
+  //printf("\n(im2row) ht = [%d, %d], wt = [%d, %d]", ht_start, ht_stop, wt_start, wt_stop);
+  if (ht_start < 0) printf("\nInvalid partial im2col boundary on the upper side!!");
+  if (ht_stop > Htot) printf("\nInvalid partial im2col boundary on the lower side!!");
+  if (wt_start < 0) printf("\nInvalid partial im2col boundary on the left!!");
+  if (wt_stop > Wtot) printf("\nInvalid partial im2col boundary on the right!!");
 
   #if NUM_CORES > 1
   // Definitions for parallelism

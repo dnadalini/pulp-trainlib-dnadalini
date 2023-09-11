@@ -129,6 +129,8 @@ static inline void connect_blobs(){
   C2D_args.USE_DMA_IM2COL = DMA;
   C2D_args.max_h_i2c = MAX_H;
   C2D_args.max_w_i2c = MAX_W; 
+  //printf("(net.c) h = %d, w = %d\n", MAX_H, MAX_W);
+  //printf("(net.c) struct h = %d, w = %d\n", C2D_args.max_h_i2c, C2D_args.max_w_i2c);
 }
 
 static inline void compute_memory_occupation(){
@@ -406,7 +408,7 @@ static inline void train(){
   #endif
 
   // DEBUG
-  return;
+  //return;
 
 
   #ifdef FORWARD
