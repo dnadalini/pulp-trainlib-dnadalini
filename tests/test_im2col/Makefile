@@ -20,6 +20,13 @@ Tin_W_l1?=3
 Tin_C_l1?=2
 Tker_W_l1?=2
 Tout_C_l1?=2
+# Partial im2col coordinates
+PARTIAL?=0				# =0 disables partial im2col, =1 enables it
+h_start?=0
+h_stop?=$(Tin_H_l1)
+w_start?=0
+w_stop?=$(Tin_W_l1)
+# Visualization
 APP_CFLAGS += -DPRINT_OUTPUT
 # End of user settings
 
@@ -49,6 +56,11 @@ APP_CFLAGS += -DTker_W_l1=$(Tker_W_l1)
 APP_CFLAGS += -DTout_C_l1=$(Tout_C_l1)
 APP_CFLAGS += -DHWC_format=$(HWC_format)
 APP_CFLAGS += -DIM2ROW=$(IM2ROW)
+APP_CFLAGS += -DPARTIAL=$(PARTIAL)
+APP_CFLAGS += -Dh_start=$(h_start)
+APP_CFLAGS += -Dh_stop=$(h_stop)
+APP_CFLAGS += -Dw_start=$(w_start)
+APP_CFLAGS += -Dw_stop=$(w_stop)
 #APP_CFLAGS += -DDEBUG
 APP_CFLAGS += -mhwloopalign
 APP_LDFLAGS += -lm

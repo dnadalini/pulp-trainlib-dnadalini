@@ -8,8 +8,13 @@
 
 #define PAD_BW (Tker_W_l1-1)
 
-#define i2c_b_size (Tker_H_l1*Tker_W_l1*Tin_C_l1*(Tin_H_l1-Tker_H_l1+UPAD+DPAD+HSTR)/HSTR*(Tin_W_l1-Tker_W_l1+LPAD+RPAD+WSTR)/WSTR)
-#define i2c_b_size_bw (Tker_H_l1*Tker_W_l1*Tout_C_l1*Tin_H_l1*Tin_W_l1)
+#if PARTIAL == 1
+    #define i2c_b_size (Tker_H_l1*Tker_W_l1*Tin_C_l1*(Tin_H_l1-Tker_H_l1+UPAD+DPAD+HSTR)/HSTR*(Tin_W_l1-Tker_W_l1+LPAD+RPAD+WSTR)/WSTR)
+    #define i2c_b_size_bw (Tker_H_l1*Tker_W_l1*Tout_C_l1*Tin_H_l1*Tin_W_l1)
+#else
+    #define i2c_b_size (Tker_H_l1*Tker_W_l1*Tin_C_l1*(Tin_H_l1-Tker_H_l1+UPAD+DPAD+HSTR)/HSTR*(Tin_W_l1-Tker_W_l1+LPAD+RPAD+WSTR)/WSTR)
+    #define i2c_b_size_bw (Tker_H_l1*Tker_W_l1*Tout_C_l1*Tin_H_l1*Tin_W_l1)
+#endif
 
 // Tensor checksum definition
 #define ABS(x) ((x)>0?(x):(-(x)))

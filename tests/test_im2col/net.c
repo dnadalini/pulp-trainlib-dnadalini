@@ -135,12 +135,38 @@ static inline void train ()
         im2col_args.Upad = UPAD;
         im2col_args.Dpad = DPAD;
         im2col_args.pBuffer = im2col_buffer;
+        #ifdef DATA_BITS == 32
+        #if PARTIAL == 1
+        im2col_args.htile_start = h_start;
+        im2col_args.htile_end = h_stop;
+        im2col_args.wtile_start = w_start;
+        im2col_args.wtile_end = w_stop;
+        #else
+        im2col_args.htile_start = 0;
+        im2col_args.htile_end = Tin_H_l1;
+        im2col_args.wtile_start = 0;
+        im2col_args.wtile_end = Tin_W_l1;
+        #endif
+        #endif
     #else
         im2col_args.Lpad = PAD_BW;
         im2col_args.Rpad = PAD_BW;
         im2col_args.Upad = PAD_BW;
         im2col_args.Dpad = PAD_BW; 
         im2col_args.pBuffer = im2col_buffer_bw;
+        #ifdef DATA_BITS == 32
+        #if PARTIAL == 1
+        im2col_args.htile_start = h_start;
+        im2col_args.htile_end = h_stop;
+        im2col_args.wtile_start = w_start;
+        im2col_args.wtile_end = w_stop;
+        #else
+        im2col_args.htile_start = 0;
+        im2col_args.htile_end = Tin_H_l1;
+        im2col_args.wtile_start = 0;
+        im2col_args.wtile_end = Tin_W_l1;
+        #endif
+        #endif
     #endif
 
     #if HWC_format == 1
