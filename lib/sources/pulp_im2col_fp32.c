@@ -75,9 +75,9 @@ void pulp_im2row_fp32(void * im2col_args){
   uint32_t wt_stop = args->wtile_end;
   // Check bindings
   if (ht_start < 0) printf("Invalid partial im2col boundary on the upper side!!");
-  if (ht_stop >= Htot) printf("Invalid partial im2col boundary on the lower side!!");
+  if (ht_stop > Htot) printf("Invalid partial im2col boundary on the lower side!!");
   if (wt_start < 0) printf("Invalid partial im2col boundary on the left!!");
-  if (wt_stop >= Wtot) printf("Invalid partial im2col boundary on the right!!");
+  if (wt_stop > Wtot) printf("Invalid partial im2col boundary on the right!!");
 
   #if NUM_CORES > 1
   // Definitions for parallelism
@@ -162,6 +162,8 @@ void pulp_im2row_fp32(void * im2col_args){
                     uint32_t in_inner_idx = wk + hk*Win;
 
                     i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
+                    printf("(ho=%d, wo=%d) i2c_buf[%d] = %f, indata[%d] = %f\n", ho, wo, kernel_idx+segment_idx+i2c_inner_idx, 
+                              i2c_buf[kernel_idx+segment_idx+i2c_inner_idx], receptive_field_idx+in_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
                   }
                 }
               }
@@ -577,10 +579,10 @@ void pulp_im2col_fp32(void * im2col_args){
   uint32_t wt_start = args->wtile_start;
   uint32_t wt_stop = args->wtile_end;
   // Check bindings
-  if (ht_start < 0) printf("Invalid partial im2col boundary on the upper side!!");
-  if (ht_stop >= Htot) printf("Invalid partial im2col boundary on the lower side!!");
-  if (wt_start < 0) printf("Invalid partial im2col boundary on the left!!");
-  if (wt_stop >= Wtot) printf("Invalid partial im2col boundary on the right!!");
+  if (ht_start < 0) printf("Invalid partial im2col boundary on the upper side!!\n");
+  if (ht_stop > Htot) printf("Invalid partial im2col boundary on the lower side!!\n");
+  if (wt_start < 0) printf("Invalid partial im2col boundary on the left!!\n");
+  if (wt_stop > Wtot) printf("Invalid partial im2col boundary on the right!!\n");
 
   #if NUM_CORES > 1
   // Definitions for parallelism
@@ -647,9 +649,9 @@ void pulp_im2col_fp32(void * im2col_args){
 
         if (padding == 0) {
           //for (uint32_t ho=0; ho<Htot/*Ho+2*pad*/; ho++) {
-          for (uint32_t ho=ht_start; ho<ht_stop/*Ho+2*pad*/; ho++) {
+          for (uint32_t ho=ht_start; ho<=ht_stop/*Ho+2*pad*/; ho++) {
             //for (uint32_t wo=0; wo<Wtot/*Wo+2*pad*/; wo++) {
-            for (uint32_t wo=wt_start; wo<wt_stop/*Wo+2*pad*/; wo++) {
+            for (uint32_t wo=wt_start; wo<=wt_stop/*Wo+2*pad*/; wo++) {
               for (uint32_t ci=start; ci<stop; ci++) {
                 // IM2COL buffer coordinates
                 uint32_t kernel_idx = ci*Htot*Wtot*Hk*Wk;
@@ -665,6 +667,8 @@ void pulp_im2col_fp32(void * im2col_args){
                     uint32_t in_inner_idx = wk + hk*Win;
 
                     i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
+                    printf("(ho=%d, wo=%d) \ti2c_buf[%d] = %f, \tindata[%d] = %f\n", ho, wo, kernel_idx+segment_idx+i2c_inner_idx, 
+                              i2c_buf[kernel_idx+segment_idx+i2c_inner_idx], receptive_field_idx+in_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
                   }
                 }
               }
