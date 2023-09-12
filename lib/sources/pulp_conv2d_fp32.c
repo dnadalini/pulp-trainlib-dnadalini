@@ -78,24 +78,25 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
        */
       if (HWC_layout == 0) {
 
+          // im2col on the input data
+          im2col_args.input = C2D_args->input;
+          im2col_args.c = C2D_args->coeff;
+          im2col_args.output = C2D_args->output;
+          im2col_args.pBuffer = i2c_buffer;
+          im2col_args.Lpad = Lpad;
+          im2col_args.Rpad = Rpad;
+          im2col_args.Upad = Upad;
+          im2col_args.Dpad = Dpad;
+          im2col_args.mod = 0;
+          im2col_args.stride_w = stride_w;
+          im2col_args.stride_h = stride_h;
+          im2col_args.USE_DMA = USE_DMA;
+          im2col_args.HWC = HWC_layout;
+
         // PARTIAL IM2COL LOOPS
         for (int h_idx=0; h_idx<h_iter; h_idx++) {
           for (int w_idx=0; w_idx<w_iter; w_idx++) {
 
-            // im2col on the input data
-            im2col_args.input = C2D_args->input;
-            im2col_args.c = C2D_args->coeff;
-            im2col_args.output = C2D_args->output;
-            im2col_args.pBuffer = i2c_buffer;
-            im2col_args.Lpad = Lpad;
-            im2col_args.Rpad = Rpad;
-            im2col_args.Upad = Upad;
-            im2col_args.Dpad = Dpad;
-            im2col_args.mod = 0;
-            im2col_args.stride_w = stride_w;
-            im2col_args.stride_h = stride_h;
-            im2col_args.USE_DMA = USE_DMA;
-            im2col_args.HWC = HWC_layout;
             // Partial im2col variables
             im2col_args.htile_start = (int) h_idx*max_h_i2c;
             im2col_args.htile_end = (int) (h_idx+1)*max_h_i2c;
@@ -107,17 +108,17 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
             pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
 
             // Partial im2col variables
-            int h_offset = h_idx*max_w_i2c*W_out*C_out;
-            int w_offset = w_idx*max_w_i2c*max_h_i2c*C_out;
-            printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
-            float * outMat = outData + h_offset; 
+            int h_offset = h_idx*max_h_i2c*W_out*C_out;
+            int w_offset = w_idx*max_w_i2c*C_out;
+            //printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
+            //float * outMat = outData + h_offset + w_offset; 
             // Matmul args
             matMul_args.A = coeffData;
             matMul_args.B = i2c_buffer;
-            matMul_args.C = outMat; //(outData+h_offset);
-            printf("(conv2d) h_idx, w_idx = [%d, %d]: outData = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
-                                  h_idx, w_idx, outData, outData, matMul_args.C, outData+h_offset+w_offset, pW*pH*C_in*max_h_i2c*max_w_i2c, 
-                                  h_offset, h_offset, w_offset, w_offset);
+            matMul_args.C = outData + h_offset + w_offset; 
+            printf("(conv2d) h_idx, w_idx = [%d, %d]: outData = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
+                                  h_idx, w_idx, outData, outData, matMul_args.C, &i2c_buffer, outData+h_offset+w_offset, 
+                                  pW*pH*C_in*max_h_i2c*max_w_i2c, h_offset, h_offset, w_offset, w_offset);
             matMul_args.N = C_out;
             matMul_args.K = pW*pH*C_in;
             matMul_args.M = max_h_i2c*max_w_i2c; //(H_out*W_out);

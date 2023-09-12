@@ -60,13 +60,15 @@ void pulp_im2row_fp32(void * im2col_args){
   uint32_t Co = output->C;
 
   // Set up internal variables (simpify external interface)
-  Ho = Hin - Hk + 1;
-  Wo = Win - Wk + 1;
+  //Ho = Hin - Hk + 1;
+  //Wo = Win - Wk + 1;
 
   // Set up im2col variables for padding and stride
   uint32_t Htot=0, Wtot=0;
   Htot = (Hin-Hk+Upad+Dpad+Hstr)/Hstr;
   Wtot = (Win-Wk+Lpad+Rpad+Wstr)/Wstr;
+  //printf("(im2row) input = 0x%x, input->W = %d\n", input, input->W);
+  //printf("(im2row) [Cin, Hin , Win] = [%d, %d, %d], [Co, Htot, Wtot] = [%d, %d, %d], [Hk, Wk] = [%d, %d]\n", Cin, Hin, Win, Co, Htot, Wtot, Wk, Hk);
 
   // Partial im2row variables
   uint32_t ht_start = args->htile_start;
@@ -75,10 +77,10 @@ void pulp_im2row_fp32(void * im2col_args){
   uint32_t wt_stop = args->wtile_end;
   // Check bindings
   //printf("\n(im2row) ht = [%d, %d], wt = [%d, %d]", ht_start, ht_stop, wt_start, wt_stop);
-  if (ht_start < 0) printf("\nInvalid partial im2col boundary on the upper side!!");
-  if (ht_stop > Htot) printf("\nInvalid partial im2col boundary on the lower side!!");
-  if (wt_start < 0) printf("\nInvalid partial im2col boundary on the left!!");
-  if (wt_stop > Wtot) printf("\nInvalid partial im2col boundary on the right!!");
+  if (ht_start < 0) printf("\nInvalid partial im2col boundary on the upper side!! (have ht_start = %d < 0)\n", ht_start);
+  if (ht_stop > Htot) printf("\nInvalid partial im2col boundary on the lower side!! (have ht_stop = %d > %d)\n", ht_stop, Htot);
+  if (wt_start < 0) printf("\nInvalid partial im2col boundary on the left!! (have wt_start = %d < 0)\n", wt_start);
+  if (wt_stop > Wtot) printf("\nInvalid partial im2col boundary on the right!! (have wt_stop = %d > %d)\n", wt_stop, Wtot);
 
   #if NUM_CORES > 1
   // Definitions for parallelism
@@ -141,6 +143,7 @@ void pulp_im2row_fp32(void * im2col_args){
 
         uint32_t padding = Lpad + Rpad + Upad + Dpad;
         // Partial im2row indices
+        uint32_t Wout_diff = wt_stop - wt_start;
         uint32_t pho = 0; uint32_t pwo = 0;
 
         if (padding == 0) {
@@ -151,8 +154,8 @@ void pulp_im2row_fp32(void * im2col_args){
               for (uint32_t ci=start; ci<stop; ci++) {
                 // IM2COL buffer coordinates
                 uint32_t kernel_idx = ci*Hk*Wk;
-                //uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
-                uint32_t segment_idx = pwo*Hk*Wk*Cin + pho*Hk*Wk*Cin*(Wtot);
+                uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
+                uint32_t partial_segment_idx = pwo*Hk*Wk*Cin; // + pho*Hk*Wk*Cin*(Wout_diff);
                 // Input tensor coordinates
                 uint32_t receptive_field_idx = (wo*Wstr) + (ho*Hstr)*Win + ci*Hin*Win;
                 for (uint32_t hk=0; hk<Hk; hk++) {
@@ -162,7 +165,9 @@ void pulp_im2row_fp32(void * im2col_args){
                     // Input tensor coordinate update
                     uint32_t in_inner_idx = wk + hk*Win;
 
-                    i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
+                    //printf("(im2row, pho, pwo = [%d, %d]) i2c_buf[%d = %d + %d + %d] = %f\n", pho, pwo, kernel_idx+partial_segment_idx+i2c_inner_idx, 
+                    //          kernel_idx, partial_segment_idx, i2c_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
+                    i2c_buf[kernel_idx+partial_segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
                     //printf("(ho=%d, wo=%d) i2c_buf[%d] = %f, indata[%d] = %f\n", ho, wo, kernel_idx+segment_idx+i2c_inner_idx, 
                     //          i2c_buf[kernel_idx+segment_idx+i2c_inner_idx], receptive_field_idx+in_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
                   }
