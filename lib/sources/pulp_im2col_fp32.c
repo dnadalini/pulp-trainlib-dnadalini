@@ -155,7 +155,7 @@ void pulp_im2row_fp32(void * im2col_args){
                 // IM2COL buffer coordinates
                 uint32_t kernel_idx = ci*Hk*Wk;
                 uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
-                uint32_t partial_segment_idx = pwo*Hk*Wk*Cin; // + pho*Hk*Wk*Cin*(Wout_diff);
+                uint32_t partial_segment_idx = pwo*Hk*Wk*Cin + pho*Hk*Wk*Cin*(Wout_diff);
                 // Input tensor coordinates
                 uint32_t receptive_field_idx = (wo*Wstr) + (ho*Hstr)*Win + ci*Hin*Win;
                 for (uint32_t hk=0; hk<Hk; hk++) {
