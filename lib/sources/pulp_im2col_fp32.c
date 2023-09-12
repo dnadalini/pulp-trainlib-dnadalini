@@ -181,45 +181,46 @@ void pulp_im2row_fp32(void * im2col_args){
         }
 
         else {
-          //for (uint32_t ho=0; ho<Htot/*Ho+2*pad*/; ho++) {
-          for (uint32_t ho=ht_start; ho<ht_stop/*Ho+2*pad*/; ho++) {
-            //for (uint32_t wo=0; wo<Wtot/*Wo+2*pad*/; wo++) {
-            for (uint32_t wo=wt_start; wo<wt_stop/*Wo+2*pad*/; wo++) {
-              for (uint32_t ci=start; ci<stop; ci++) {
-                // IM2COL buffer coordinates
-                uint32_t kernel_idx = ci*Hk*Wk;
-                //uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
-                uint32_t segment_idx = pwo*Hk*Wk*Cin + pho*Hk*Wk*Cin*(Wtot);
-                // Input tensor coordinates
-                uint32_t receptive_field_idx = (wo*Wstr-Lpad) + (ho*Hstr-Upad)*Win + ci*Hin*Win;
-                for (uint32_t hk=0; hk<Hk; hk++) {
-                  for (uint32_t wk=0; wk<Wk; wk++) {
-                    // IM2COl buffer coordinate update
-                    uint32_t i2c_inner_idx = wk + hk*Wk;
-                    // Input tensor coordinate update
-                    uint32_t in_inner_idx = wk + hk*Win;
-                    // Padding condition
-                    uint32_t w_pad_cond = wk + wo*Wstr;
-                    uint32_t h_pad_cond = hk + ho*Hstr;
+          printf("(im2row) Padding not implemented!!\n")
+          // //for (uint32_t ho=0; ho<Htot/*Ho+2*pad*/; ho++) {
+          // for (uint32_t ho=ht_start; ho<ht_stop/*Ho+2*pad*/; ho++) {
+          //   //for (uint32_t wo=0; wo<Wtot/*Wo+2*pad*/; wo++) {
+          //   for (uint32_t wo=wt_start; wo<wt_stop/*Wo+2*pad*/; wo++) {
+          //     for (uint32_t ci=start; ci<stop; ci++) {
+          //       // IM2COL buffer coordinates
+          //       uint32_t kernel_idx = ci*Hk*Wk;
+          //       //uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
+          //       uint32_t segment_idx = pwo*Hk*Wk*Cin + pho*Hk*Wk*Cin*(Wtot);
+          //       // Input tensor coordinates
+          //       uint32_t receptive_field_idx = (wo*Wstr-Lpad) + (ho*Hstr-Upad)*Win + ci*Hin*Win;
+          //       for (uint32_t hk=0; hk<Hk; hk++) {
+          //         for (uint32_t wk=0; wk<Wk; wk++) {
+          //           // IM2COl buffer coordinate update
+          //           uint32_t i2c_inner_idx = wk + hk*Wk;
+          //           // Input tensor coordinate update
+          //           uint32_t in_inner_idx = wk + hk*Win;
+          //           // Padding condition
+          //           uint32_t w_pad_cond = wk + wo*Wstr;
+          //           uint32_t h_pad_cond = hk + ho*Hstr;
 
-                    if ((padding>0)&&((h_pad_cond<Upad) || (w_pad_cond<Lpad) || (h_pad_cond>Ho+(Hk)-Dpad) || (w_pad_cond>Wo+(Wk)-Rpad))) {
-                      // Padding
-                      i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = 0;
-                      //printf("(pad) i2c_buf[%d]=%f                        kernel_idx=%d, segment_idx=%d, ho=%d\n", kernel_idx+segment_idx, i2c_buf[kernel_idx+segment_idx], kernel_idx, segment_idx, ho);
-                    }
-                    else {
-                      // Fill IM2COL buffer
-                      i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
-                      //printf("(i2c) i2c_buf[%d]=%f (indata=%f)      kernel_idx=%d, segment_idx=%d, ho=%d\n", kernel_idx+segment_idx, i2c_buf[kernel_idx+segment_idx], input->data[receptive_field_idx], kernel_idx, segment_idx, ho);
-                    }
-                  }
-                }
-              }
-              pwo++;
-              if (pwo == wt_stop) pwo = 0;
-            }
-            pho++;
-          }
+          //           if ((padding>0)&&((h_pad_cond<Upad) || (w_pad_cond<Lpad) || (h_pad_cond>Ho+(Hk)-Dpad) || (w_pad_cond>Wo+(Wk)-Rpad))) {
+          //             // Padding
+          //             i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = 0;
+          //             //printf("(pad) i2c_buf[%d]=%f                        kernel_idx=%d, segment_idx=%d, ho=%d\n", kernel_idx+segment_idx, i2c_buf[kernel_idx+segment_idx], kernel_idx, segment_idx, ho);
+          //           }
+          //           else {
+          //             // Fill IM2COL buffer
+          //             i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
+          //             //printf("(i2c) i2c_buf[%d]=%f (indata=%f)      kernel_idx=%d, segment_idx=%d, ho=%d\n", kernel_idx+segment_idx, i2c_buf[kernel_idx+segment_idx], input->data[receptive_field_idx], kernel_idx, segment_idx, ho);
+          //           }
+          //         }
+          //       }
+          //     }
+          //     pwo++;
+          //     if (pwo == wt_stop) pwo = 0;
+          //   }
+          //   pho++;
+          // }
         }
 
       }
@@ -283,244 +284,244 @@ void pulp_im2row_fp32(void * im2col_args){
    * USE HWC FORMAT (ADJACENT ELEMENTS ARE CHANNEL ELEMENTS IN THE INPUT OR OUTPUT MATRIX)
    */
   else if (HWC == 1) {
-    /**
-     * LOCAL L1 IM2COL (FROM L1 TENSOR TO L1 IM2COL_BUFFER)
-     */
-    if (USE_DMA == 0) {
-      // FORWARD & WEIGHT GRAD
-      if (mod==0)
-      {
-        if ((Hin-Hk+Upad+Dpad+Hstr) % Hstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid H stride (non multiple H sizes): have H_in=%d, H_ker=%d, U_pad=%d, D_pad=%d, H_stride=%d, remainder=%d", Hin, Hk, Upad, Dpad, Hstr, (Hin-Hk+Upad+Dpad+Hstr) % Hstr); return;}
-        else                                        Htot = (Hin-Hk+Upad+Dpad+Hstr)/Hstr;
-        if ((Win-Wk+Lpad+Rpad+Wstr) % Wstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid W stride (non multiple W sizes): have W_in=%d, W_ker=%d, L_pad=%d, R_pad=%d, W_stride=%d, remainder=%d", Win, Wk, Lpad, Rpad, Wstr, (Win-Wk+Lpad+Rpad+Wstr) % Wstr); return;}
-        else                                        Wtot = (Win-Wk+Lpad+Rpad+Wstr)/Wstr;
+    // /**
+    //  * LOCAL L1 IM2COL (FROM L1 TENSOR TO L1 IM2COL_BUFFER)
+    //  */
+    // if (USE_DMA == 0) {
+    //   // FORWARD & WEIGHT GRAD
+    //   if (mod==0)
+    //   {
+    //     if ((Hin-Hk+Upad+Dpad+Hstr) % Hstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid H stride (non multiple H sizes): have H_in=%d, H_ker=%d, U_pad=%d, D_pad=%d, H_stride=%d, remainder=%d", Hin, Hk, Upad, Dpad, Hstr, (Hin-Hk+Upad+Dpad+Hstr) % Hstr); return;}
+    //     else                                        Htot = (Hin-Hk+Upad+Dpad+Hstr)/Hstr;
+    //     if ((Win-Wk+Lpad+Rpad+Wstr) % Wstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid W stride (non multiple W sizes): have W_in=%d, W_ker=%d, L_pad=%d, R_pad=%d, W_stride=%d, remainder=%d", Win, Wk, Lpad, Rpad, Wstr, (Win-Wk+Lpad+Rpad+Wstr) % Wstr); return;}
+    //     else                                        Wtot = (Win-Wk+Lpad+Rpad+Wstr)/Wstr;
 
-        uint32_t padding = Lpad + Rpad + Upad + Dpad;
-        // Partial im2row indices
-        uint32_t pho = 0; uint32_t pwo = 0;
-        // Recompute parallel indices per core
-        int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
-        start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
-        stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
+    //     uint32_t padding = Lpad + Rpad + Upad + Dpad;
+    //     // Partial im2row indices
+    //     uint32_t pho = 0; uint32_t pwo = 0;
+    //     // Recompute parallel indices per core
+    //     int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
+    //     start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
+    //     stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
-        if (padding == 0) {
+    //     if (padding == 0) {
 
-          for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
-            //for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
-            for (uint32_t wo=wt_start; wo<wt_stop/*Wtot*/; wo++) {
-              // Im2Col indices
-              //uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
-              uint32_t segment_idx = pwo*Hk*Wk*Cin + pho*Hk*Wk*Cin*(Wtot);
-              // Input activation indices
-              uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
-              for (uint32_t hk=0; hk<Hk; hk++) {
-                for (uint32_t wk=0; wk<Wk; wk++) {
-                  for (uint32_t ci=0; ci<Cin; ci++) {
-                    // Im2Col indices
-                    uint32_t i2c_inner_idx = ci + wk*Cin + hk*Cin*Wk;
-                    // Input activation indices                    
-                    uint32_t act_idx = ci + wk*Cin + hk*Cin*Win;
-                    // Fill im2col buffer
-                    i2c_buf[segment_idx+i2c_inner_idx] = input->data[input_idx+act_idx];
-                  }
-                }
-              }
-              pwo++;
-              if (pwo == wt_stop) pwo = 0;
-            }
-            pho++;
-          }
+    //       for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
+    //         //for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
+    //         for (uint32_t wo=wt_start; wo<wt_stop/*Wtot*/; wo++) {
+    //           // Im2Col indices
+    //           //uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
+    //           uint32_t segment_idx = pwo*Hk*Wk*Cin + pho*Hk*Wk*Cin*(Wtot);
+    //           // Input activation indices
+    //           uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
+    //           for (uint32_t hk=0; hk<Hk; hk++) {
+    //             for (uint32_t wk=0; wk<Wk; wk++) {
+    //               for (uint32_t ci=0; ci<Cin; ci++) {
+    //                 // Im2Col indices
+    //                 uint32_t i2c_inner_idx = ci + wk*Cin + hk*Cin*Wk;
+    //                 // Input activation indices                    
+    //                 uint32_t act_idx = ci + wk*Cin + hk*Cin*Win;
+    //                 // Fill im2col buffer
+    //                 i2c_buf[segment_idx+i2c_inner_idx] = input->data[input_idx+act_idx];
+    //               }
+    //             }
+    //           }
+    //           pwo++;
+    //           if (pwo == wt_stop) pwo = 0;
+    //         }
+    //         pho++;
+    //       }
 
-        }
-        else {
+    //     }
+    //     else {
 
-          printf("\n[pulp_im2col_fp32.c:] Padding not implemented for HWC im2col without DMA!\n");
+    //       printf("\n[pulp_im2col_fp32.c:] Padding not implemented for HWC im2col without DMA!\n");
 
-          // for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
-          //   for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
-          //     // Im2Col indices
-          //     uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
-          //     // Input activation indices
-          //     uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
-          //     for (uint32_t hk=0; hk<Hk; hk++) {
-          //       for (uint32_t wk=0; wk<Wk; wk++) {
-          //         for (uint32_t ci=0; ci<Cin; ci++) {
-          //           // Im2Col indices
-          //           uint32_t i2c_inner_idx = ci + wk*Cin + hk*Cin*Wk;
-          //           // Input activation indices                    
-          //           uint32_t act_idx = ci + wk*Cin + hk*Cin*Win;
-          //           // Fill im2col buffer
-          //           i2c_buf[segment_idx+i2c_inner_idx] = input->data[input_idx+act_idx];
-          //         }
-          //       }
-          //     }
-          //   }
-          // }
+    //       // for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
+    //       //   for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
+    //       //     // Im2Col indices
+    //       //     uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
+    //       //     // Input activation indices
+    //       //     uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
+    //       //     for (uint32_t hk=0; hk<Hk; hk++) {
+    //       //       for (uint32_t wk=0; wk<Wk; wk++) {
+    //       //         for (uint32_t ci=0; ci<Cin; ci++) {
+    //       //           // Im2Col indices
+    //       //           uint32_t i2c_inner_idx = ci + wk*Cin + hk*Cin*Wk;
+    //       //           // Input activation indices                    
+    //       //           uint32_t act_idx = ci + wk*Cin + hk*Cin*Win;
+    //       //           // Fill im2col buffer
+    //       //           i2c_buf[segment_idx+i2c_inner_idx] = input->data[input_idx+act_idx];
+    //       //         }
+    //       //       }
+    //       //     }
+    //       //   }
+    //       // }
 
-        }
-      }
-      else // IN GRAD
-      {
-        uint32_t Hox = output->H;
-        uint32_t Wox = output->W;
-        // Partial im2row indices
-        uint32_t phi = 0; uint32_t pwi = 0;  
-        // Recompute start and stop indices per core
-        int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
-        start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
-        stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
+    //     }
+    //   }
+    //   else // IN GRAD
+    //   {
+    //     uint32_t Hox = output->H;
+    //     uint32_t Wox = output->W;
+    //     // Partial im2row indices
+    //     uint32_t phi = 0; uint32_t pwi = 0;  
+    //     // Recompute start and stop indices per core
+    //     int blockSize = ((ht_stop-ht_start+1)+NUM_CORES-1) / NUM_CORES;
+    //     start = pi_core_id()*blockSize > ht_start ? ht_start : pi_core_id()*blockSize;
+    //     stop = start+blockSize > ht_stop ? ht_stop : start+blockSize;
 
-        for (uint32_t hi=start/*0*/; hi<stop/*Hin*/; hi++) {
-          //for (uint32_t wi=0; wi<Win; wi++) {
-          for (uint32_t wi=wt_start; wi<wt_stop; wi++) {
-            // Padding variables
-            int ho_rf = hi - (Hk-1);
-            int wo_rf = wi - (Wk-1);
+    //     for (uint32_t hi=start/*0*/; hi<stop/*Hin*/; hi++) {
+    //       //for (uint32_t wi=0; wi<Win; wi++) {
+    //       for (uint32_t wi=wt_start; wi<wt_stop; wi++) {
+    //         // Padding variables
+    //         int ho_rf = hi - (Hk-1);
+    //         int wo_rf = wi - (Wk-1);
 
-            for (uint32_t hk=0; hk<Hk; hk++) {
-              for (uint32_t wk=0; wk<Wk; wk++) {
-                // Padding conditions
-                int w_pad_cond = wk + wo_rf;
-                int h_pad_cond = hk + ho_rf;    
+    //         for (uint32_t hk=0; hk<Hk; hk++) {
+    //           for (uint32_t wk=0; wk<Wk; wk++) {
+    //             // Padding conditions
+    //             int w_pad_cond = wk + wo_rf;
+    //             int h_pad_cond = hk + ho_rf;    
 
-                // Set padding loop
-                if ((h_pad_cond<0) || (w_pad_cond<0) || (h_pad_cond>=(int)Hox) || (w_pad_cond>=(int)Wox)) {
-                  for (uint32_t co=0; co<Co; co++) {
-                    // IM2COL buffer coordinates
-                    //uint32_t segment_idx = wi*Co*Hk*Wk + hi*Co*Hk*Wk*Win;
-                    uint32_t segment_idx = pwi*Co*Hk*Wk + phi*Co*Hk*Wk*Win;
-                    uint32_t kernel_idx = wk*Co + hk*Co*Wk;
-                    uint32_t i2c_inner_idx = co;  
+    //             // Set padding loop
+    //             if ((h_pad_cond<0) || (w_pad_cond<0) || (h_pad_cond>=(int)Hox) || (w_pad_cond>=(int)Wox)) {
+    //               for (uint32_t co=0; co<Co; co++) {
+    //                 // IM2COL buffer coordinates
+    //                 //uint32_t segment_idx = wi*Co*Hk*Wk + hi*Co*Hk*Wk*Win;
+    //                 uint32_t segment_idx = pwi*Co*Hk*Wk + phi*Co*Hk*Wk*Win;
+    //                 uint32_t kernel_idx = wk*Co + hk*Co*Wk;
+    //                 uint32_t i2c_inner_idx = co;  
 
-                    // Fill with zeroes  
-                    i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = 0.0f;             
-                  }
-                }
-                else {
-                  // Non-padded iteration
-                  for (uint32_t co=0; co<Co; co++) {
-                    // OutDiff coordinates
-                    int receptive_field_idx = (wo_rf+wk)*Co + (ho_rf+hk)*Co*Wox;
-                    uint32_t out_inner_idx = co;
+    //                 // Fill with zeroes  
+    //                 i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = 0.0f;             
+    //               }
+    //             }
+    //             else {
+    //               // Non-padded iteration
+    //               for (uint32_t co=0; co<Co; co++) {
+    //                 // OutDiff coordinates
+    //                 int receptive_field_idx = (wo_rf+wk)*Co + (ho_rf+hk)*Co*Wox;
+    //                 uint32_t out_inner_idx = co;
 
-                    // IM2COL buffer coordinates
-                    uint32_t segment_idx = pwi*Co*Hk*Wk + phi*Co*Hk*Wk*Win;
-                    uint32_t kernel_idx = wk*Co + hk*Co*Wk;
-                    uint32_t i2c_inner_idx = co;
+    //                 // IM2COL buffer coordinates
+    //                 uint32_t segment_idx = pwi*Co*Hk*Wk + phi*Co*Hk*Wk*Win;
+    //                 uint32_t kernel_idx = wk*Co + hk*Co*Wk;
+    //                 uint32_t i2c_inner_idx = co;
 
-                    // Fill IM2COL buffer
-                    i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = output->diff[receptive_field_idx+out_inner_idx];
-                  }
+    //                 // Fill IM2COL buffer
+    //                 i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = output->diff[receptive_field_idx+out_inner_idx];
+    //               }
                                            
-                }
-              }
-            }
-            pwi++;
-            if (pwi == wt_stop) pwi = 0;
-          }
-          phi++;
-        }
-      }
-    }
+    //             }
+    //           }
+    //         }
+    //         pwi++;
+    //         if (pwi == wt_stop) pwi = 0;
+    //       }
+    //       phi++;
+    //     }
+    //   }
+    // }
 
-    /**
-     * IM2COL FROM L2 DATA TO L1 IM2COL_BUFFER
-     */
-    else if (USE_DMA == 1) {
-      // FORWARD & WEIGHT GRAD
-      if (mod==0)
-      {
-        if ((Hin-Hk+Upad+Dpad+Hstr) % Hstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid H stride (non multiple H sizes): have H_in=%d, H_ker=%d, U_pad=%d, D_pad=%d, H_stride=%d, remainder=%d", Hin, Hk, Upad, Dpad, Hstr, (Hin-Hk+Upad+Dpad+Hstr) % Hstr); return;}
-        else                                        Htot = (Hin-Hk+Upad+Dpad+Hstr)/Hstr;
-        if ((Win-Wk+Lpad+Rpad+Wstr) % Wstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid W stride (non multiple W sizes): have W_in=%d, W_ker=%d, L_pad=%d, R_pad=%d, W_stride=%d, remainder=%d", Win, Wk, Lpad, Rpad, Wstr, (Win-Wk+Lpad+Rpad+Wstr) % Wstr); return;}
-        else                                        Wtot = (Win-Wk+Lpad+Rpad+Wstr)/Wstr;
+    // /**
+    //  * IM2COL FROM L2 DATA TO L1 IM2COL_BUFFER
+    //  */
+    // else if (USE_DMA == 1) {
+    //   // FORWARD & WEIGHT GRAD
+    //   if (mod==0)
+    //   {
+    //     if ((Hin-Hk+Upad+Dpad+Hstr) % Hstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid H stride (non multiple H sizes): have H_in=%d, H_ker=%d, U_pad=%d, D_pad=%d, H_stride=%d, remainder=%d", Hin, Hk, Upad, Dpad, Hstr, (Hin-Hk+Upad+Dpad+Hstr) % Hstr); return;}
+    //     else                                        Htot = (Hin-Hk+Upad+Dpad+Hstr)/Hstr;
+    //     if ((Win-Wk+Lpad+Rpad+Wstr) % Wstr > 0)     {printf("\n[pulp_im2col_fp32: 243] Invalid W stride (non multiple W sizes): have W_in=%d, W_ker=%d, L_pad=%d, R_pad=%d, W_stride=%d, remainder=%d", Win, Wk, Lpad, Rpad, Wstr, (Win-Wk+Lpad+Rpad+Wstr) % Wstr); return;}
+    //     else                                        Wtot = (Win-Wk+Lpad+Rpad+Wstr)/Wstr;
 
-        uint32_t padding = Lpad + Rpad + Upad + Dpad;
+    //     uint32_t padding = Lpad + Rpad + Upad + Dpad;
 
-        if (padding == 0) {
+    //     if (padding == 0) {
 
-          for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
-            for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
-              // Im2Col indices
-              uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
-              // Input activation indices
-              uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
+    //       for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
+    //         for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
+    //           // Im2Col indices
+    //           uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
+    //           // Input activation indices
+    //           uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
 
-              // DMA Copy structures
-              pi_cl_dma_copy_2d_t dma_i2cfw;
+    //           // DMA Copy structures
+    //           pi_cl_dma_copy_2d_t dma_i2cfw;
 
-              // Load first data into L1A
-              dma_i2cfw.dir = PI_CL_DMA_DIR_EXT2LOC;
-              dma_i2cfw.merge = 0;
-              dma_i2cfw.stride = 4*Cin*Win;
-              dma_i2cfw.length = 4*Cin*Wk;
-              dma_i2cfw.size = 4*Hk*Wk*Cin;
-              dma_i2cfw.id = pi_core_id();
-              dma_i2cfw.ext = (uint32_t) (input->data + input_idx);
-              dma_i2cfw.loc = (uint32_t) &i2c_buf[segment_idx];
-              pi_cl_dma_memcpy_2d(&dma_i2cfw);  
+    //           // Load first data into L1A
+    //           dma_i2cfw.dir = PI_CL_DMA_DIR_EXT2LOC;
+    //           dma_i2cfw.merge = 0;
+    //           dma_i2cfw.stride = 4*Cin*Win;
+    //           dma_i2cfw.length = 4*Cin*Wk;
+    //           dma_i2cfw.size = 4*Hk*Wk*Cin;
+    //           dma_i2cfw.id = pi_core_id();
+    //           dma_i2cfw.ext = (uint32_t) (input->data + input_idx);
+    //           dma_i2cfw.loc = (uint32_t) &i2c_buf[segment_idx];
+    //           pi_cl_dma_memcpy_2d(&dma_i2cfw);  
 
-              pi_cl_dma_wait(&dma_i2cfw);  
-            }
-          }
+    //           pi_cl_dma_wait(&dma_i2cfw);  
+    //         }
+    //       }
 
-        }
-        else {
+    //     }
+    //     else {
 
-          printf("\n[pulp_im2col_fp32.c:] Padding not implemented for HWC im2col with DMA!\n");
+    //       printf("\n[pulp_im2col_fp32.c:] Padding not implemented for HWC im2col with DMA!\n");
 
-          // for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
-          //   for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
-          //     // Im2Col indices
-          //     uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
-          //     // Input activation indices
-          //     uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
+    //       // for (uint32_t ho=start; ho<stop/*Htot*/; ho++) {
+    //       //   for (uint32_t wo=0; wo<Wtot/*Wtot*/; wo++) {
+    //       //     // Im2Col indices
+    //       //     uint32_t segment_idx = wo*Hk*Wk*Cin + ho*Hk*Wk*Cin*(Wtot);
+    //       //     // Input activation indices
+    //       //     uint32_t input_idx = (wo*Wstr-Lpad)*Cin + (ho*Hstr-Upad)*Cin*Win;
 
-          //     // DMA Copy structures
-          //     pi_cl_dma_copy_2d_t dma_i2cfw;
+    //       //     // DMA Copy structures
+    //       //     pi_cl_dma_copy_2d_t dma_i2cfw;
 
-          //     // Load first data into L1A
-          //     dma_i2cfw.dir = PI_CL_DMA_DIR_EXT2LOC;
-          //     dma_i2cfw.merge = 0;
-          //     dma_i2cfw.stride = 4*Cin*Win;
-          //     dma_i2cfw.length = 4*Cin*Wk;
-          //     dma_i2cfw.size = 4*Hk*Wk*Cin;
-          //     dma_i2cfw.id = pi_core_id();
-          //     dma_i2cfw.ext = (uint32_t) (input->data + input_idx);
-          //     dma_i2cfw.loc = (uint32_t) &i2c_buf[segment_idx];
-          //     pi_cl_dma_memcpy_2d(&dma_i2cfw);  
+    //       //     // Load first data into L1A
+    //       //     dma_i2cfw.dir = PI_CL_DMA_DIR_EXT2LOC;
+    //       //     dma_i2cfw.merge = 0;
+    //       //     dma_i2cfw.stride = 4*Cin*Win;
+    //       //     dma_i2cfw.length = 4*Cin*Wk;
+    //       //     dma_i2cfw.size = 4*Hk*Wk*Cin;
+    //       //     dma_i2cfw.id = pi_core_id();
+    //       //     dma_i2cfw.ext = (uint32_t) (input->data + input_idx);
+    //       //     dma_i2cfw.loc = (uint32_t) &i2c_buf[segment_idx];
+    //       //     pi_cl_dma_memcpy_2d(&dma_i2cfw);  
 
-          //     pi_cl_dma_wait(&dma_i2cfw);  
-          //   }
-          // }
+    //       //     pi_cl_dma_wait(&dma_i2cfw);  
+    //       //   }
+    //       // }
                     
-        }
-      }
-      else // IN GRAD
-      {
-        uint32_t Hox = output->H;
-        uint32_t Wox = output->W;
+    //     }
+    //   }
+    //   else // IN GRAD
+    //   {
+    //     uint32_t Hox = output->H;
+    //     uint32_t Wox = output->W;
         
-        printf("\n[pulp_im2col_fp32:] HWC Im2Col for IN GRAD not implemented!!\n");
+    //     printf("\n[pulp_im2col_fp32:] HWC Im2Col for IN GRAD not implemented!!\n");
 
-        for (uint32_t hi=start; hi<stop; hi++) {
-          for (uint32_t wi=0; wi<Win; wi++) {
-            for (uint32_t hk=0; hk<Hk; hk++) {
-              for (uint32_t wk=0; wk<Wk; wk++) {
-                for (uint32_t co=0; co<Co; co++) {
+    //     for (uint32_t hi=start; hi<stop; hi++) {
+    //       for (uint32_t wi=0; wi<Win; wi++) {
+    //         for (uint32_t hk=0; hk<Hk; hk++) {
+    //           for (uint32_t wk=0; wk<Wk; wk++) {
+    //             for (uint32_t co=0; co<Co; co++) {
                                                         
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
-    // ERROR SIGNAL
-    else {
-      printf("\n[pulp_im2col_fp32: 414] Invalid USE_DMA parameter (not 0 or 1)\n");
-    }
+    // // ERROR SIGNAL
+    // else {
+    //   printf("\n[pulp_im2col_fp32: 414] Invalid USE_DMA parameter (not 0 or 1)\n");
+    // }
     
   }
 
