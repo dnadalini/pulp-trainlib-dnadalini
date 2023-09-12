@@ -39,7 +39,8 @@ PI_L2 int L2_memocc_bytes = 0;
 
 #ifdef FORWARD
 #if (IM2COL == 1)
-#define IM2COL_SIZE (Tker_H_l1*Tker_W_l1*Tin_C_l1*((Tin_H_l1-Tker_H_l1+PAD_U+PAD_D+STRIDE_H)/STRIDE_H)*((Tin_W_l1-Tker_W_l1+PAD_L+PAD_R+STRIDE_W)/STRIDE_W))
+//#define IM2COL_SIZE (Tker_H_l1*Tker_W_l1*Tin_C_l1*((Tin_H_l1-Tker_H_l1+PAD_U+PAD_D+STRIDE_H)/STRIDE_H)*((Tin_W_l1-Tker_W_l1+PAD_L+PAD_R+STRIDE_W)/STRIDE_W))
+#define IM2COL_SIZE (Tker_H_l1*Tker_W_l1*Tin_C_l1*MAX_H*MAX_W)
 PI_L1 float im2col_buffer[IM2COL_SIZE];
 #else 
 #define IM2COL_SIZE 1
@@ -378,6 +379,7 @@ static inline void train(){
 
   #ifdef PROF_FWD
   printf("\nForward stats\n");
+  printf("IM2COL_SIZE = %d\n", IM2COL_SIZE);
   START_STATS();
   #endif
 
