@@ -295,6 +295,16 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
     int USE_IM2COL = C2D_args->USE_IM2COL;
     int USE_DMA = C2D_args->USE_DMA_IM2COL;
     int opt_matmul_type = C2D_args->opt_matmul_type_wg;
+
+    // Parameters for partial im2col
+    int max_h_i2c = C2D_args->max_h_i2c;
+    int max_w_i2c = C2D_args->max_w_i2c;
+    //printf("(fw c2d) max_h = %d, max_w = %d\n", max_h_i2c, max_w_i2c);
+    // Iteration variables
+    int h_iter = H_out / max_h_i2c;
+    int h_leftover = H_out % max_h_i2c;
+    int w_iter = W_out / max_w_i2c;
+    int w_leftover = W_out % max_w_i2c;
     
   /**
    * USE OPTIMIZED ALGORITHM
@@ -319,26 +329,49 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
       im2col_args.USE_DMA = USE_DMA;
       im2col_args.HWC = HWC_layout;
 
-      pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+      // PARTIAL IM2COL LOOPS
+      for (int h_idx=0; h_idx<h_iter; h_idx++) {
+        for (int w_idx=0; w_idx<w_iter; w_idx++) {      
 
-      matMul_args.A = outDiff;
-      matMul_args.B = i2c_buffer;
-      matMul_args.C = coeffDiff;
-      matMul_args.N = C_out; 
-      matMul_args.K = H_out*W_out; 
-      matMul_args.M = pW*pH*C_in; 
-      matMul_args.trans_B = 0;
+          // Partial im2col variables
+          im2col_args.htile_start = (int) h_idx*max_h_i2c;
+          im2col_args.htile_end = (int) (h_idx+1)*max_h_i2c;
+          im2col_args.wtile_start = (int) w_idx*max_w_i2c;
+          im2col_args.wtile_end = (int) (w_idx+1)*max_w_i2c;
 
-      #ifndef OPTIMIZE
-      pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-      #else
-      struct mm_manager_args man_args;
-      man_args.mm_args = &matMul_args;
-      man_args.layer_type = LAYER_CONV2D;
-      man_args.step_type = STEP_WGT_GRAD;
-      man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-      pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-      #endif
+          pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+
+          // Partial im2col variables
+          int h_offset = h_idx*max_h_i2c*W_out*C_out;
+          int w_offset = w_idx*max_h_i2c*max_w_i2c*C_out;
+
+          // GENERAL BEHAVIOURAL FIX NEEDED!!!
+          // With this partial im2col, the contributions from each 
+          // iteration of the im2cols have to be summed, as the 
+          // contributions of all the output grad should be 
+          // propagated to the input. The number of ops, anyway,
+          // is the same. 
+          matMul_args.A = outDiff + h_offset + w_offset;
+          matMul_args.B = i2c_buffer;
+          matMul_args.C = coeffDiff;
+          matMul_args.N = C_out; 
+          matMul_args.K = max_h_i2c*max_w_i2c;  // H_out*W_out;
+          matMul_args.M = pW*pH*C_in; 
+          matMul_args.trans_B = 0;
+
+          #ifndef OPTIMIZE
+          pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
+          #else
+          struct mm_manager_args man_args;
+          man_args.mm_args = &matMul_args;
+          man_args.layer_type = LAYER_CONV2D;
+          man_args.step_type = STEP_WGT_GRAD;
+          man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
+          pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
+          #endif
+
+        }
+      }
     }
   
     /**
