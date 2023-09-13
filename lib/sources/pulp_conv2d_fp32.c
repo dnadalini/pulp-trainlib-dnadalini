@@ -115,7 +115,7 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
             // Matmul args
             matMul_args.A = coeffData;
             matMul_args.B = i2c_buffer;
-            matMul_args.C = outData + h_offset + w_offset;                                                                                                                         h_offset, h_offset, w_offset, w_offset);
+            matMul_args.C = outData + h_offset + w_offset; 
             matMul_args.N = C_out;
             matMul_args.K = pW*pH*C_in;
             matMul_args.M = max_h_i2c*max_w_i2c; //(H_out*W_out);
@@ -480,6 +480,16 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
   int USE_DMA = C2D_args->USE_DMA_IM2COL;
   int opt_matmul_type = C2D_args->opt_matmul_type_ig;
 
+  // Parameters for partial im2col
+  int max_h_i2c = C2D_args->max_h_i2c;
+  int max_w_i2c = C2D_args->max_w_i2c;
+  //printf("(fw c2d) max_h = %d, max_w = %d\n", max_h_i2c, max_w_i2c);
+  // Iteration variables
+  int h_iter = H_in / max_h_i2c;
+  int h_leftover = H_in % max_h_i2c;
+  int w_iter = W_in / max_w_i2c;
+  int w_leftover = W_in % max_w_i2c;
+
   /**
    * USE OPTIMIZED ALGORITHM
    */
@@ -504,38 +514,60 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
       im2col_args.USE_DMA = USE_DMA; 
       im2col_args.HWC = HWC_layout;
 
-      pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+      // PARTIAL IM2COL LOOPS
+      for (int h_idx=0; h_idx<h_iter; h_idx++) {
+        for (int w_idx=0; w_idx<w_iter; w_idx++) {
 
-      // Blocktranspose weights
-      struct blocktransp_args bt_args;
-      bt_args.weights = coeffData;
-      bt_args.bt_weights = temp_bt;
-      bt_args.Cout = C_out;
-      bt_args.Cin = C_in;
-      bt_args.Hk = pH;
-      bt_args.Wk = pW;
-      bt_args.HWC = HWC_layout;
+          // Partial im2col variables
+          im2col_args.htile_start = (int) h_idx*max_h_i2c;
+          im2col_args.htile_end = (int) (h_idx+1)*max_h_i2c;
+          im2col_args.wtile_start = (int) w_idx*max_w_i2c;
+          im2col_args.wtile_end = (int) (w_idx+1)*max_w_i2c;
 
-      matMul_args.A = temp_bt; //coeffData;
-      matMul_args.B = i2c_buffer;
-      matMul_args.C = inDiff;
-      matMul_args.N = C_in;
-      matMul_args.K = pW*pH*C_out;
-      matMul_args.M = W_in*H_in;
-      matMul_args.trans_B = 1;
+          pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
 
-      pi_cl_team_fork(NUM_CORES, pulp_blocktransp_fp32, &bt_args);
+          // Partial im2col variables
+          int h_offset = h_idx*max_h_i2c*W_in*C_in;
+          int w_offset = w_idx*max_h_i2c*max_w_i2c*C_in;
 
-      #ifndef OPTIMIZE
-      pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-      #else
-      struct mm_manager_args man_args;
-      man_args.mm_args = &matMul_args;
-      man_args.layer_type = LAYER_CONV2D;
-      man_args.step_type = STEP_IN_GRAD;
-      man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-      pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-      #endif
+          // Blocktranspose weights
+          struct blocktransp_args bt_args;
+          bt_args.weights = coeffData;
+          bt_args.bt_weights = temp_bt;
+          bt_args.Cout = C_out;
+          bt_args.Cin = C_in;
+          bt_args.Hk = pH;
+          bt_args.Wk = pW;
+          bt_args.HWC = HWC_layout;
+
+          matMul_args.A = temp_bt; //coeffData;
+          matMul_args.B = i2c_buffer;
+          matMul_args.C = inDiff + h_offset + w_offset;
+          matMul_args.N = C_in;
+          matMul_args.K = pW*pH*C_out;
+          matMul_args.M = max_h_i2c*max_w_i2c; //W_in*H_in;
+          matMul_args.trans_B = 1;
+
+          pi_cl_team_fork(NUM_CORES, pulp_blocktransp_fp32, &bt_args);
+
+          #ifndef OPTIMIZE
+          pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
+          #else
+          struct mm_manager_args man_args;
+          man_args.mm_args = &matMul_args;
+          man_args.layer_type = LAYER_CONV2D;
+          man_args.step_type = STEP_IN_GRAD;
+          man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
+          pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
+          #endif
+        }
+        if (w_leftover > 0) {
+          // LEFTOVERS IN THE INNER LOOP
+        }
+      }
+      if (h_leftover > 0) {
+        // LEFTOVERS IN THE OUTER LOOP
+      }
     }
 
     /**

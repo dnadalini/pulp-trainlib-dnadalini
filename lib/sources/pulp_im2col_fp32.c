@@ -181,7 +181,7 @@ void pulp_im2row_fp32(void * im2col_args){
         }
 
         else {
-          printf("(im2row) Padding not implemented!!\n")
+          printf("(im2row) Padding not implemented!!\n");
           // //for (uint32_t ho=0; ho<Htot/*Ho+2*pad*/; ho++) {
           // for (uint32_t ho=ht_start; ho<ht_stop/*Ho+2*pad*/; ho++) {
           //   //for (uint32_t wo=0; wo<Wtot/*Wo+2*pad*/; wo++) {
