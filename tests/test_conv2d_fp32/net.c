@@ -399,6 +399,7 @@ static inline void train(){
 
   #ifdef PROF_BKWD
   printf("\nBackward stats\n");
+  printf("IM2COL_SIZE = %d\n", IM2COL_SIZE);
   START_STATS();
   #endif
 

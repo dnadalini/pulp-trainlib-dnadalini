@@ -24,8 +24,8 @@ IM2COL?=1			# Selects to use or not the im2col+matmul (0=don't, 1=use)
 DMA?=0				# In case IM2COL+MM are used, select to manage IM2COL using DMA (input data/output gradient need to be in L2, im2col buffer in L1)
 HWC_LAYOUT?=0		# Choose if data layout is CHW (=0) or HWC (=1)
 # Partial im2col variables
-max_h_i2c?=6
-max_w_i2c?=6
+max_h_i2c?=2
+max_w_i2c?=2
 # End of user settings
 
 TRAIN_LIB=../../lib

@@ -238,8 +238,8 @@ void pulp_im2row_fp32(void * im2col_args){
             for (uint32_t co=start; co<stop; co++) {
               // IM2COL buffer coordinates
               uint32_t kernel_idx = co*Hk*Wk;
-              //uint32_t segment_idx = wi*Hk*Wk*Co + hi*Hk*Wk*Co*Win;
-              uint32_t segment_idx = pwi*Hk*Wk*Co + phi*Hk*Wk*Co*Win;
+              uint32_t segment_idx = wi*Hk*Wk*Co + hi*Hk*Wk*Co*Win;
+              uint32_t partial_segment_idx = pwi*Hk*Wk*Co + phi*Hk*Wk*Co*Win;
               // Output grad tensor coordinates
               int ho_rf = hi - (Hk-1);
               int wo_rf = wi - (Wk-1);
@@ -257,11 +257,15 @@ void pulp_im2row_fp32(void * im2col_args){
 
                   if ((h_pad_cond<0) || (w_pad_cond<0) || (h_pad_cond>=(int)Hox) || (w_pad_cond>=(int)Wox)) {
                     // Padding
-                    i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = 0;
+                    //printf("(im2row, phi, pwi = [%d, %d]) i2c_buf[%d = %d + %d + %d] = %f\n", phi, pwi, kernel_idx+partial_segment_idx+i2c_inner_idx, 
+                    //          kernel_idx, partial_segment_idx, i2c_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
+                    i2c_buf[kernel_idx+partial_segment_idx+i2c_inner_idx] = 0;
                   }
                   else {
                     // Fill IM2COL buffer
-                    i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = output->diff[receptive_field_idx+out_inner_idx];
+                    //printf("(im2row, pho, pwo = [%d, %d]) i2c_buf[%d = %d + %d + %d] = %f\n", pho, pwo, kernel_idx+partial_segment_idx+i2c_inner_idx, 
+                    //          kernel_idx, partial_segment_idx, i2c_inner_idx, input->data[receptive_field_idx+in_inner_idx]);
+                    i2c_buf[kernel_idx+partial_segment_idx+i2c_inner_idx] = output->diff[receptive_field_idx+out_inner_idx];
                   }
                 }
               }
