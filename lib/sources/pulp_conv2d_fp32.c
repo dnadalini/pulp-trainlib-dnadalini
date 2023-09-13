@@ -122,7 +122,7 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
             matMul_args.trans_B = 1;
             //printf("(conv2d) h_idx, w_idx = [%d, %d]: out_size = (%d), outData = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
             //                            h_idx, w_idx, C_out*H_out*W_out, outData, outData, matMul_args.C, outData+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
-            //        
+            //                                                                                                                                h_offset, h_offset, w_offset, w_offset);    
 
             #ifndef OPTIMIZE
             pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
@@ -344,7 +344,8 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
           // Partial im2col variables
           int h_offset = h_idx*max_h_i2c*W_out*C_out;
           int w_offset = w_idx*max_h_i2c*max_w_i2c*C_out;
-
+          printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
+          
           // GENERAL BEHAVIOURAL FIX NEEDED!!!
           // With this partial im2col, the contributions from each 
           // iteration of the im2cols have to be summed, as the 
@@ -358,6 +359,9 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
           matMul_args.K = max_h_i2c*max_w_i2c;  // H_out*W_out;
           matMul_args.M = pW*pH*C_in; 
           matMul_args.trans_B = 0;
+          printf("(conv2d) h_idx, w_idx = [%d, %d]: out_size = (%d), outData = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
+                                      h_idx, w_idx, C_out*H_out*W_out, outData, outData, matMul_args.C, outData+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
+                                                                                                                                          h_offset, h_offset, w_offset, w_offset);              
 
           #ifndef OPTIMIZE
           pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
