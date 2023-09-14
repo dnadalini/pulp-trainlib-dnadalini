@@ -1,8 +1,8 @@
 APP = linear_test
 
 # User settings
-IN_CH?=16
-OUT_CH?=16
+IN_CH?=1920
+OUT_CH?=4
 NUM_CORES?=8
 STEP?='FORWARD' # Possible steps: 'FORWARD', 'BACKWARD_GRAD', 'BACKWARD_ERROR'
 #APP_CFLAGS += -DDEBUG

@@ -77,10 +77,18 @@ void pulp_im2row_fp32(void * im2col_args){
   uint32_t wt_stop = args->wtile_end;
   // Check bindings
   //printf("\n(im2row) ht = [%d, %d], wt = [%d, %d]", ht_start, ht_stop, wt_start, wt_stop);
-  if (ht_start < 0) printf("\nInvalid partial im2col boundary on the upper side!! (have ht_start = %d < 0)\n", ht_start);
-  if (ht_stop > Htot) printf("\nInvalid partial im2col boundary on the lower side!! (have ht_stop = %d > %d)\n", ht_stop, Htot);
-  if (wt_start < 0) printf("\nInvalid partial im2col boundary on the left!! (have wt_start = %d < 0)\n", wt_start);
-  if (wt_stop > Wtot) printf("\nInvalid partial im2col boundary on the right!! (have wt_stop = %d > %d)\n", wt_stop, Wtot);
+  if (mod == 0) {
+    if (ht_start < 0) printf("\n(im2row, mod=0) Invalid partial im2col boundary on the upper side (h<0)!! (have ht_start = %d < 0)\n", ht_start);
+    if (ht_stop > Htot) printf("\n(im2row, mod=0) Invalid partial im2col boundary on the lower side (h>Hout)!! (have ht_stop = %d > %d)\n", ht_stop, Htot);
+    if (wt_start < 0) printf("\n(im2row, mod=0) Invalid partial im2col boundary on the left (w<0)!! (have wt_start = %d < 0)\n", wt_start);
+    if (wt_stop > Wtot) printf("\n(im2row, mod=0) Invalid partial im2col boundary on the right (w>Wout)!! (have wt_stop = %d > %d)\n", wt_stop, Wtot);
+  }
+  else if (mod == 1) {
+    if (ht_start < 0) printf("\nInvalid partial im2col boundary on the upper side (h<0)!! (have ht_start = %d < 0)\n", ht_start);
+    if (ht_stop > Hin) printf("\nInvalid partial im2col boundary on the lower side (h>Hin)!! (have ht_stop = %d > %d)\n", ht_stop, Hin);
+    if (wt_start < 0) printf("\nInvalid partial im2col boundary on the left (w<0)!! (have wt_start = %d < 0)\n", wt_start);
+    if (wt_stop > Win) printf("\nInvalid partial im2col boundary on the right (w>Win)!! (have wt_stop = %d > %d)\n", wt_stop, Win);
+  }
 
   #if NUM_CORES > 1
   // Definitions for parallelism

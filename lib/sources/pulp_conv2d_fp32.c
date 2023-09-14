@@ -522,14 +522,14 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
   // Parameters for partial im2col
   int max_h_i2c = C2D_args->max_h_i2c;
   int max_w_i2c = C2D_args->max_w_i2c;
-  printf("(in grad c2d) max_h = %d, max_w = %d\n", max_h_i2c, max_w_i2c);
+  //printf("(in grad c2d) max_h = %d, max_w = %d\n", max_h_i2c, max_w_i2c);
   // Iteration variables
   int h_iter = H_in / max_h_i2c;
   int h_leftover = H_in % max_h_i2c;
   int w_iter = W_in / max_w_i2c;
   int w_leftover = W_in % max_w_i2c;
 
-  printf("h_iter = %d\nh_leftover = %d\nw_iter = %d\nw_leftover = %d", h_iter, h_leftover, w_iter, w_leftover);
+  //printf("h_iter = %d\nh_leftover = %d\nw_iter = %d\nw_leftover = %d", h_iter, h_leftover, w_iter, w_leftover);
 
   /**
    * USE OPTIMIZED ALGORITHM
@@ -564,8 +564,8 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           im2col_args.htile_end = (int) (h_idx+1)*max_h_i2c;
           im2col_args.wtile_start = (int) w_idx*max_w_i2c;
           im2col_args.wtile_end = (int) (w_idx+1)*max_w_i2c;
-          printf("\n(i2c_args) ht = [%d, %d], wt = [%d, %d]", 
-            (int) h_idx*h_iter, (int) (h_idx+1)*h_iter, (int) w_idx*w_iter, (int) (w_idx+1)*w_iter);
+          //printf("\n(i2c_args) ht = [%d, %d], wt = [%d, %d]", 
+          //  (int) h_idx*h_iter, (int) (h_idx+1)*h_iter, (int) w_idx*w_iter, (int) (w_idx+1)*w_iter);
 
           pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
 
@@ -591,9 +591,9 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           matMul_args.K = pW*pH*C_out;
           matMul_args.M = max_h_i2c*max_w_i2c; //W_in*H_in;
           matMul_args.trans_B = 1;
-          printf("(conv2d) h_idx, w_idx = [%d, %d]: in_size = (%d), inDiff = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
-                                      h_idx, w_idx,      C_in*H_in*W_in,  inDiff, inDiff, matMul_args.C, inDiff+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
-                                                                                                                                          h_offset, h_offset, w_offset, w_offset);    
+          //printf("(conv2d) h_idx, w_idx = [%d, %d]: in_size = (%d), inDiff = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
+          //                            h_idx, w_idx,      C_in*H_in*W_in,  inDiff, inDiff, matMul_args.C, inDiff+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
+          //                                                                                                                                h_offset, h_offset, w_offset, w_offset);    
 
           pi_cl_team_fork(NUM_CORES, pulp_blocktransp_fp32, &bt_args);
 
