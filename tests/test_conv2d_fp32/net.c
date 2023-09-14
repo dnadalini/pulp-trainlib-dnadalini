@@ -63,9 +63,8 @@ PI_L1 float l1_out_diff[Tout_H_l1*Tout_W_l1*Tout_C_l1];
 #endif
 
 #ifdef BACKWARD_GRAD
-//#define IM2COL_SIZE (Tker_W_l1*Tker_H_l1*Tout_W_l1*Tout_H_l1*Tout_C_l1)
 //#define IM2COL_SIZE (Tker_W_l1*Tker_H_l1*Tout_W_l1*Tout_H_l1*Tin_C_l1)
-#define IM2COL_SIZE (Tker_H_l1*Tker_W_l1*Tin_C_l1*MAX_H*MAX_W)
+#define IM2COL_SIZE (Tker_W_l1*Tker_H_l1*Tout_W_l1*Tout_H_l1*MAX_C)
 PI_L1 float l1_in[Tin_H_l1*Tin_W_l1*Tin_C_l1];
 PI_L1 float im2col_buffer[IM2COL_SIZE];
 PI_L1 float l1_ker_diff[Tker_H_l1*Tker_W_l1*Tin_C_l1*Tout_C_l1];
@@ -226,8 +225,7 @@ static inline void connect_blobs(){
   C2D_args.opt_matmul_type_ig = MATMUL_TYPE;
   C2D_args.USE_IM2COL = IM2COL;
   C2D_args.USE_DMA_IM2COL = DMA;
-  C2D_args.max_h_i2c = MAX_H;
-  C2D_args.max_w_i2c = MAX_W; 
+  C2D_args.max_c_i2c = MAX_C;
 }
 
 static inline void compute_memory_occupation(){
