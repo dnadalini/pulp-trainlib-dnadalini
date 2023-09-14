@@ -316,27 +316,66 @@ void pulp_im2row_wg_fp32(void* im2col_args) {
   // Partial im2row variables
   uint32_t cin_start = args->cin_tile_start;
   uint32_t cin_stop = args->cin_tile_end;
-  if (cin_start < 0) printf("\n");
-  if (cin_stop > Cin) printf("\n");
+  if (cin_start < 0) printf("\n(im2row, mod=0) Invalid partial im2col boundary on the starting channel (cin<0)!! (have cin_start = %d < 0)\n", cin_start);
+  if (cin_stop > Cin) printf("\n(im2row, mod=0) Invalid partial im2col boundary on the final channel (cin>Cin)!! (have cin_stop = %d > Cin)\n", cin_stop);
 
   #if NUM_CORES > 1
   // Definitions for parallelism
   uint32_t blockSize=0, start=0, stop=0;
   if (HWC == 0 && mod == 0) {
-    blockSize = (Cin+NUM_CORES-1) / NUM_CORES;
+    blockSize = (Htot+NUM_CORES-1) / NUM_CORES;
     start = pi_core_id()*blockSize;
-    stop = start+blockSize > Cin ? Cin : start+blockSize;
+    stop = start+blockSize > Htot ? Htot : start+blockSize;
   }
   #else
   uint32_t start=0, stop=0; 
   if (HWC == 0 && mod == 0) {
     start = 0;
-    stop = Cin;    
+    stop = Htot;    
   }
   #endif  
 
+  if ((Hin-Hk+Upad+Dpad+Hstr) % Hstr > 0)     {printf("\n[pulp_im2col_fp32] Invalid H stride (non multiple H sizes): have H_in=%d, H_ker=%d, U_pad=%d, D_pad=%d, H_stride=%d, remainder=%d", Hin, Hk, Upad, Dpad, Hstr, (Hin-Hk+Upad+Dpad+Hstr) % Hstr); return;}
+  else                                        Htot = (Hin-Hk+Upad+Dpad+Hstr)/Hstr;
+  if ((Win-Wk+Lpad+Rpad+Wstr) % Wstr > 0)     {printf("\n[pulp_im2col_fp32] Invalid W stride (non multiple W sizes): have W_in=%d, W_ker=%d, L_pad=%d, R_pad=%d, W_stride=%d, remainder=%d", Win, Wk, Lpad, Rpad, Wstr, (Win-Wk+Lpad+Rpad+Wstr) % Wstr); return;}
+  else                                        Wtot = (Win-Wk+Lpad+Rpad+Wstr)/Wstr;
 
+  uint32_t padding = Lpad + Rpad + Upad + Dpad;
+  // Partial im2row indices
+  uint32_t Cin_diff = cin_stop - cin_start;
+  uint32_t pci = 0;
 
+  if (padding == 0) {
+    for (uint32_t ho=start; ho<stop; ho++) {
+      for (uint32_t wo=0; wo<Wtot; wo++) {
+        for (uint32_t ci=cin_start; ci<cin_stop; ci++) {
+          // IM2COL buffer coordinates
+          uint32_t kernel_idx = pci*Hk*Wk;
+          uint32_t segment_idx = wo*Hk*Wk*Cin_diff + ho*Hk*Wk*Cin_diff*(Wtot);
+          // Input tensor coordinates
+          uint32_t receptive_field_idx = (wo*Wstr) + (ho*Hstr)*Win + ci*Hin*Win;
+          for (uint32_t hk=0; hk<Hk; hk++) {
+            for (uint32_t wk=0; wk<Wk; wk++) {
+              // IM2COl buffer coordinate update
+              uint32_t i2c_inner_idx = wk + hk*Wk;
+              // Input tensor coordinate update
+              uint32_t in_inner_idx = wk + hk*Win;
+
+              float temp_data = input->data[receptive_field_idx+in_inner_idx];
+              printf("(im2row_wg) i2c_buf[%d] = %f, kernel_idx = %d, segment_idx = %d, i2c_inner_idx = %d, pci = %d\n",
+                        kernel_idx+segment_idx+i2c_inner_idx, temp_data, kernel_idx, segment_idx, i2c_inner_idx, pci);
+              i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
+            }
+          }
+          pci++;
+          if (pci == cin_stop) pci = 0;
+        }
+      }
+    }          
+  }
+  else {
+    printf("(im2row_wg_fp32) Padding not implemented!!\n");
+  }
 
 }
 

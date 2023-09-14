@@ -141,11 +141,15 @@ static inline void train ()
         im2col_args.htile_end = h_stop;
         im2col_args.wtile_start = w_start;
         im2col_args.wtile_end = w_stop;
+        im2col_args.cin_tile_start = c_start;
+        im2col_args.cin_tile_end = c_stop;
         #else
         im2col_args.htile_start = 0;
         im2col_args.htile_end = Tin_H_l1;
         im2col_args.wtile_start = 0;
         im2col_args.wtile_end = Tin_W_l1;
+        im2col_args.cin_tile_start = 0;
+        im2col_args.cin_tile_end = Tin_C_l1;
         #endif
         #endif
     #else
@@ -238,8 +242,10 @@ static inline void train ()
     #if DATA_BITS == 32
     #if IM2ROW == 0
     pi_cl_team_fork(NUM_CORES, pulp_im2col_fp32, &im2col_args);
-    #else
+    #elif IM2ROW == 1
     pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+    #elif IM2ROW == 2
+    pi_cl_team_fork(NUM_CORES, pulp_im2row_wg_fp32, &im2col_args);
     #endif
     #elif DATA_BITS == 16
     #if IM2ROW == 0
@@ -273,8 +279,10 @@ static inline void train ()
         //if (!(idx%Tker_H_l1)) printf("\n");
         #if IM2ROW == 0
         if (!(idx%(Tout_H_l1*Tout_W_l1))) printf("\n");
-        #else
+        #elif IM2ROW == 1
         if (!(idx%(Tker_H_l1*Tker_W_l1*Tin_C_l1))) printf("\n");
+        #elif IM2ROW == 2
+        if (!(idx%(Tker_H_l1*Tker_W_l1*(c_stop-c_start)))) printf("\n");
         #endif
         printf("%f ", im2col_buffer[idx]);
 
@@ -423,7 +431,11 @@ void net_step ()
 
     printf("\nHello, starting im2col FP%d!\n", DATA_BITS);
     if (MOD==0) {
+        #if IM2ROW == 2
+        printf("Performing tiled IM2ROW for weight grad.\n");
+        #else
         printf("Performing IM2COL for forward and weight gradient (DMA=%d).\n", DMA_ENABLE);
+        #endif
     }
     else if (MOD==1) {
         printf("Performing IM2COL for input gradient (DMA=%d).\n", DMA_ENABLE);

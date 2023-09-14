@@ -2,11 +2,11 @@ APP = im2col_fp32
 
 # User settings
 DATA_BITS?=32				# 32=FP32, 16=FP16
-NUM_CORES?=8
-IM2ROW?=0					# 0=Im2Col, 1=Im2Row
-MOD?=1 						# 0=Forward/WeightGrad, 1=InGrad
+NUM_CORES?=1
+IM2ROW?=2					# 0=Im2Col, 1=Im2Row, 2=Im2Row_WG
+MOD?=0 						# 0=Forward/WeightGrad, 1=InGrad
 DMA_ENABLE?=0				# Use Cluster DMA to move data or not
-HWC_format?=1				# CHW (=0) or HWC (=1) data format for the im2col
+HWC_format?=0				# CHW (=0) or HWC (=1) data format for the im2col
 # Layer padding and stride
 LPAD?=0
 RPAD?=0
@@ -26,6 +26,8 @@ h_start?=0
 h_stop?=2
 w_start?=0
 w_stop?=2
+c_start?=1
+c_stop?=2
 # Visualization
 APP_CFLAGS += -DPRINT_OUTPUT
 # End of user settings
@@ -61,6 +63,8 @@ APP_CFLAGS += -Dh_start=$(h_start)
 APP_CFLAGS += -Dh_stop=$(h_stop)
 APP_CFLAGS += -Dw_start=$(w_start)
 APP_CFLAGS += -Dw_stop=$(w_stop)
+APP_CFLAGS += -Dc_start=$(c_start)
+APP_CFLAGS += -Dc_stop=$(c_stop)
 #APP_CFLAGS += -DDEBUG
 APP_CFLAGS += -mhwloopalign
 APP_LDFLAGS += -lm
