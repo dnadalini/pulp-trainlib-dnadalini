@@ -362,8 +362,9 @@ void pulp_im2row_wg_fp32(void* im2col_args) {
               uint32_t in_inner_idx = wk + hk*Win;
 
               float temp_data = input->data[receptive_field_idx+in_inner_idx];
-              printf("(im2row_wg) i2c_buf[%d] = %f, kernel_idx = %d, segment_idx = %d, i2c_inner_idx = %d, pci = %d\n",
-                        kernel_idx+segment_idx+i2c_inner_idx, temp_data, kernel_idx, segment_idx, i2c_inner_idx, pci);
+              printf("(im2row_wg, ho=%d, wo=%d, ci=%d, hk,wk=[%d,%d]) i2c_buf[%d] = %f, segment_idx = %d, kernel_idx = %d, i2c_inner_idx = %d, pci = %d, Cin_diff = %d\n",
+                                  ho, wo, ci, hk, wk,
+                                                            kernel_idx+segment_idx+i2c_inner_idx, temp_data, segment_idx, kernel_idx, i2c_inner_idx, pci, Cin_diff);
               i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
             }
           }
