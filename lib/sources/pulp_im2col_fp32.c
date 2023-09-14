@@ -151,6 +151,7 @@ void pulp_im2row_fp32(void * im2col_args){
 
         uint32_t padding = Lpad + Rpad + Upad + Dpad;
         // Partial im2row indices
+        uint32_t Hout_diff = ht_stop - ht_start;
         uint32_t Wout_diff = wt_stop - wt_start;
         uint32_t pho = 0; uint32_t pwo = 0;
 
@@ -182,9 +183,10 @@ void pulp_im2row_fp32(void * im2col_args){
                 }
               }
               pwo++;
-              if (pwo == wt_stop) pwo = 0;
+              if (pwo == Wout_diff) pwo = 0;
             }
             pho++;
+            if (pho == Hout_diff) pho = 0;
           }          
         }
 
@@ -198,6 +200,8 @@ void pulp_im2row_fp32(void * im2col_args){
         uint32_t Hox = output->H;
         uint32_t Wox = output->W;
         // Partial im2row indices
+        uint32_t Hin_diff = ht_stop - ht_start;
+        uint32_t Win_diff = wt_stop - wt_start;
         uint32_t phi = 0; uint32_t pwi = 0;        
         
         //for (uint32_t hi=0; hi<Hin; hi++) {
@@ -240,9 +244,10 @@ void pulp_im2row_fp32(void * im2col_args){
               }
             }
             pwi++;
-            if (pwi == wt_stop) pwi = 0;
+            if (pwi == Win_diff) pwi = 0;
           }
           phi++;
+          if (phi == Hin_diff) phi = 0;
         }
       }
     }
@@ -361,15 +366,15 @@ void pulp_im2row_wg_fp32(void* im2col_args) {
               // Input tensor coordinate update
               uint32_t in_inner_idx = wk + hk*Win;
 
-              float temp_data = input->data[receptive_field_idx+in_inner_idx];
-              printf("(im2row_wg, ho=%d, wo=%d, ci=%d, hk,wk=[%d,%d]) i2c_buf[%d] = %f, segment_idx = %d, kernel_idx = %d, i2c_inner_idx = %d, pci = %d, Cin_diff = %d\n",
-                                  ho, wo, ci, hk, wk,
-                                                            kernel_idx+segment_idx+i2c_inner_idx, temp_data, segment_idx, kernel_idx, i2c_inner_idx, pci, Cin_diff);
+              //float temp_data = input->data[receptive_field_idx+in_inner_idx];
+              //printf("(im2row_wg, ho=%d, wo=%d, ci=%d, hk,wk=[%d,%d]) i2c_buf[%d] = %f, segment_idx = %d, kernel_idx = %d, i2c_inner_idx = %d, pci = %d, Cin_diff = %d\n",
+              //                    ho, wo, ci, hk, wk,
+              //                                              kernel_idx+segment_idx+i2c_inner_idx, temp_data, segment_idx, kernel_idx, i2c_inner_idx, pci, Cin_diff);
               i2c_buf[kernel_idx+segment_idx+i2c_inner_idx] = input->data[receptive_field_idx+in_inner_idx];
             }
           }
           pci++;
-          if (pci == cin_stop) pci = 0;
+          if (pci == Cin_diff) pci = 0;
         }
       }
     }          
