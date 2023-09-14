@@ -43,8 +43,9 @@
  * @param opt_matmul_type_ig number of the optimizer matmul to be chosen by the mm_manager for the input gradient primitive (see mm_manager_list.txt)
  * @param USE_IM2COL if set to 0, the convd kernel calls for the naive implementation, if set to 1 for the im2col+matmul optimized execution
  * @param USE_DMA_IM2COL in case the primitive uses IM2COL + MM, select if to perform im2col using DMA-managed transfers from L2 to L1 (input and output gradient tensors need to be stored in L2, im2col_buffer in L1)
- * @param max_h_i2c is used to define the standard number of H-dimension elements to be transformed by the im2col in each iteration
- * @param max_w_i2c is used to define the standard number of W-dimension elements to be transformed by the im2col in each iteration
+ * @param max_h_i2c is used to define the standard number of H-dimension elements to be transformed by the im2col in each iteration (forward and input grad)
+ * @param max_w_i2c is used to define the standard number of W-dimension elements to be transformed by the im2col in each iteration (forward and input grad)
+ * @param max_c_i2c is used to define the standard number of C-dimension elements to be transformed by the im2col in each iteration (weight grad)
  */
 struct Conv2D_args {
 	struct blob * input; 
@@ -68,6 +69,7 @@ struct Conv2D_args {
 	// Parameters for partial im2col
 	int max_h_i2c;
 	int max_w_i2c;
+	int max_c_i2c;
 };
 
 
