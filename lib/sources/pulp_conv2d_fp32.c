@@ -297,14 +297,11 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
     int opt_matmul_type = C2D_args->opt_matmul_type_wg;
 
     // Parameters for partial im2col
-    int max_h_i2c = C2D_args->max_h_i2c;
-    int max_w_i2c = C2D_args->max_w_i2c;
-    //printf("(fw c2d) max_h = %d, max_w = %d\n", max_h_i2c, max_w_i2c);
+    int max_c_i2c = C2D_args->max_c_i2c;
+    //printf("(weight grad c2d) max_c = %d\n", max_c_i2c);
     // Iteration variables
-    int h_iter = H_out / max_h_i2c;
-    int h_leftover = H_out % max_h_i2c;
-    int w_iter = W_out / max_w_i2c;
-    int w_leftover = W_out % max_w_i2c;
+    int c_iter = C_in / max_c_i2c;
+    int c_leftover = C_in % max_c_i2c;
     
   /**
    * USE OPTIMIZED ALGORITHM
@@ -339,7 +336,7 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
         //im2col_args.wtile_start = (int) w_idx*max_w_i2c;
         //im2col_args.wtile_end = (int) (w_idx+1)*max_w_i2c;
 
-        pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+        pi_cl_team_fork(NUM_CORES, pulp_im2row_wg_fp32, &im2col_args);
 
         // FIXME!!
         // Partial im2col variables
