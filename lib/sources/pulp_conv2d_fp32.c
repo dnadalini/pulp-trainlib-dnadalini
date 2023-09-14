@@ -105,7 +105,7 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
             //printf("\n(i2c_args) ht = [%d, %d], wt = [%d, %d]", 
             //  (int) h_idx*h_iter, (int) (h_idx+1)*h_iter, (int) w_idx*w_iter, (int) (w_idx+1)*w_iter);
 
-            pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+            pi_cl_team_fork(NUM_CORES, pulp_im2row_fw_ig_fp32, &im2col_args);
 
             // Partial im2col variables
             int h_offset = h_idx*max_h_i2c*W_out*C_out;
@@ -557,7 +557,7 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           //printf("\n(i2c_args) ht = [%d, %d], wt = [%d, %d]", 
           //  (int) h_idx*h_iter, (int) (h_idx+1)*h_iter, (int) w_idx*w_iter, (int) (w_idx+1)*w_iter);
 
-          pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+          pi_cl_team_fork(NUM_CORES, pulp_im2row_fw_ig_fp32, &im2col_args);
 
           // Partial im2col variables
           int h_offset = h_idx*max_h_i2c*W_in*C_in;

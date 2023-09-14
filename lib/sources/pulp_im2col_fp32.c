@@ -26,7 +26,7 @@
  * 
  * @param im2col_args 
  */
-void pulp_im2row_fp32(void * im2col_args){
+void pulp_im2row_fw_ig_fp32(void * im2col_args){
 
   // unpack args
   struct im2col_args * args = (struct im2col_args *) im2col_args;

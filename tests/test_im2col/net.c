@@ -243,7 +243,7 @@ static inline void train ()
     #if IM2ROW == 0
     pi_cl_team_fork(NUM_CORES, pulp_im2col_fp32, &im2col_args);
     #elif IM2ROW == 1
-    pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+    pi_cl_team_fork(NUM_CORES, pulp_im2row_fw_ig_fp32, &im2col_args);
     #elif IM2ROW == 2
     pi_cl_team_fork(NUM_CORES, pulp_im2row_wg_fp32, &im2col_args);
     #endif

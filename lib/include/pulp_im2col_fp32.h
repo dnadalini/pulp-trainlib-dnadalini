@@ -27,7 +27,7 @@
  * @brief Function to perform partial im2row on convolutions. Use pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &args) to parallelize.
  * @param im2col_args pointer to im2col_args structure (see pulp_train_utils_fp32.h)
  */ 
-void pulp_im2row_fp32 (
+void pulp_im2row_fw_ig_fp32 (
 	void * im2col_args
 );
 
