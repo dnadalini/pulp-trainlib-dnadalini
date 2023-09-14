@@ -10,7 +10,7 @@ static void init_matrix ()
 {
     for (int i=0; i<Tin_C*Tin_H*Tin_W; i++)
     {
-        IN_DATA_FP32[i] = (float) i/10;
+        IN_DATA_FP32[i] = 0.1 + (float) i/10;
     }
 }
 
@@ -30,6 +30,17 @@ void net_step ()
 // ---------FP32-------------------------------
 
     // INITIALIZE STRUCTURE
+    struct pad_args args;
+    args.source = IN_DATA_FP32;
+    args.dest = PADDED_DATA_FP32;
+    args.C = Tin_C;
+    args.H = Tin_H;
+    args.W = Tin_W;
+    args.T_LPAD = LPAD;
+    args.T_RPAD = RPAD;
+    args.T_UPAD = UPAD;
+    args.T_DPAD = DPAD;
+    args.HWC_lay = 0;
 
     #ifdef PRINT_MATS
     #if HWC_LAYOUT == 0
@@ -58,7 +69,7 @@ void net_step ()
     START_STATS();
     #endif
 
-    //pi_cl_team_fork(NUM_CORES, pulp_blocktransp_fp32, &args);
+    pi_cl_team_fork(NUM_CORES, pad_tensor, &args);
 
     #ifdef PROF_NET
     STOP_STATS();

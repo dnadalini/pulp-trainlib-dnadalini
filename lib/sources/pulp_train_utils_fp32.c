@@ -140,6 +140,57 @@ void cast_fp16_tensor_to_fp32 (void * cast_16t32_args)
 
 
 
+void pad_tensor (void * pad_args) 
+{
+    struct pad_args * args = (struct pad_args*) pad_args;
+    float * source = args->source;
+    float * dest = args->dest;
+    int C = args->C;
+    int H = args->H;
+    int W = args->W;
+    int L_PAD = args->T_LPAD;
+    int R_PAD = args->T_RPAD;
+    int U_PAD = args->T_UPAD;
+    int D_PAD = args->T_DPAD;
+    int HWC = args->HWC_lay;
+    
+    int H_out = H + U_PAD + D_PAD;
+    int W_out = W + L_PAD + R_PAD;
+
+    int blockSize = (C+NUM_CORES-1) / NUM_CORES;
+    int start = pi_core_id()*blockSize;
+    int stop = start+blockSize > C ? C : start+blockSize;
+
+    if (HWC == 0) 
+    {
+        for (int ch=0; ch<C; ch++) 
+        {
+            for (int ht=0; ht<H_out; ht++) 
+            {
+                for (int wt=0; wt<W_out; wt++) 
+                {
+                    // Compute matrix idx
+                    int in_t_idx = (wt-L_PAD) + (ht-U_PAD)*W + ch*H*W;
+                    int out_t_idx = wt + ht*W_out + ch*H_out*W_out;
+                    // Padding conditions
+                    int zero_cond = (wt < L_PAD || wt > W) || (ht < U_PAD || ht > H);
+                    if (zero_cond == 1) { dest[out_t_idx] = 0; }
+                    else 
+                    {
+                        dest[out_t_idx] = source[in_t_idx];
+                    }
+                }
+            }
+        }
+    }
+    else 
+    {
+        printf("[pad_tensor] HWC layout not implemented!!");
+    }
+}
+
+
+
 void HWC_to_CHW (void * layout_args) 
 {
     struct layout_args * args = (struct layout_args *) layout_args;
