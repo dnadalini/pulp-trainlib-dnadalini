@@ -330,53 +330,51 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
       im2col_args.HWC = HWC_layout;
 
       // PARTIAL IM2COL LOOPS
-      for (int h_idx=0; h_idx<h_iter; h_idx++) {
-        for (int w_idx=0; w_idx<w_iter; w_idx++) {      
+      for (int c_idx=0; c_idx<c_iter; c_idx++) {
 
-          // FIXME!!
-          // Partial im2col variables
-          //im2col_args.htile_start = (int) h_idx*max_h_i2c;
-          //im2col_args.htile_end = (int) (h_idx+1)*max_h_i2c;
-          //im2col_args.wtile_start = (int) w_idx*max_w_i2c;
-          //im2col_args.wtile_end = (int) (w_idx+1)*max_w_i2c;
+        // FIXME!!
+        // Partial im2col variables
+        //im2col_args.htile_start = (int) h_idx*max_h_i2c;
+        //im2col_args.htile_end = (int) (h_idx+1)*max_h_i2c;
+        //im2col_args.wtile_start = (int) w_idx*max_w_i2c;
+        //im2col_args.wtile_end = (int) (w_idx+1)*max_w_i2c;
 
-          pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
+        pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
 
-          // FIXME!!
-          // Partial im2col variables
-          //int h_offset = h_idx*max_h_i2c*W_out*C_out;
-          //int w_offset = w_idx*max_h_i2c*max_w_i2c*C_out;
-          //printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
-          
-          // GENERAL BEHAVIOURAL FIX NEEDED!!!
-          // With this partial im2col, the contributions from each 
-          // iteration of the im2cols have to be summed, as the 
-          // contributions of all the output grad should be 
-          // propagated to the input. The number of ops, anyway,
-          // is the same. 
-          matMul_args.A = outDiff; // + h_offset + w_offset;
-          matMul_args.B = i2c_buffer;
-          matMul_args.C = coeffDiff;
-          matMul_args.N = C_out; 
-          matMul_args.K = max_h_i2c*max_w_i2c;  // H_out*W_out;
-          matMul_args.M = pW*pH*C_in; 
-          matMul_args.trans_B = 0;
-          //printf("(conv2d) h_idx, w_idx = [%d, %d]: out_size = (%d), outData = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
-          //                            h_idx, w_idx, C_out*H_out*W_out, outData, outData, matMul_args.C, outData+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
-          //                                                                                                                                h_offset, h_offset, w_offset, w_offset);              
+        // FIXME!!
+        // Partial im2col variables
+        //int h_offset = h_idx*max_h_i2c*W_out*C_out;
+        //int w_offset = w_idx*max_h_i2c*max_w_i2c*C_out;
+        //printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
+        
+        // GENERAL BEHAVIOURAL FIX NEEDED!!!
+        // With this partial im2col, the contributions from each 
+        // iteration of the im2cols have to be summed, as the 
+        // contributions of all the output grad should be 
+        // propagated to the input. The number of ops, anyway,
+        // is the same. 
+        matMul_args.A = outDiff; // + h_offset + w_offset;
+        matMul_args.B = i2c_buffer;
+        matMul_args.C = coeffDiff;
+        matMul_args.N = C_out; 
+        matMul_args.K = H_out*W_out;
+        matMul_args.M = pW*pH*C_in; 
+        matMul_args.trans_B = 0;
+        //printf("(conv2d) h_idx, w_idx = [%d, %d]: out_size = (%d), outData = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
+        //                            h_idx, w_idx, C_out*H_out*W_out, outData, outData, matMul_args.C, outData+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
+        //                                                                                                                                h_offset, h_offset, w_offset, w_offset);              
 
-          #ifndef OPTIMIZE
-          pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-          #else
-          struct mm_manager_args man_args;
-          man_args.mm_args = &matMul_args;
-          man_args.layer_type = LAYER_CONV2D;
-          man_args.step_type = STEP_WGT_GRAD;
-          man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-          pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-          #endif
+        #ifndef OPTIMIZE
+        pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
+        #else
+        struct mm_manager_args man_args;
+        man_args.mm_args = &matMul_args;
+        man_args.layer_type = LAYER_CONV2D;
+        man_args.step_type = STEP_WGT_GRAD;
+        man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
+        pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
+        #endif
 
-        }
       }
     }
   
