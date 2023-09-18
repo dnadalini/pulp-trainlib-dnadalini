@@ -13,7 +13,7 @@ PAD_U?=0
 PAD_D?=0
 STRIDE_H?=1
 STRIDE_W?=1
-NUM_CORES?=8
+NUM_CORES?=1
 STEP?='FORWARD' # options: // FORWARD, BACKWARD_GRAD, BACKWARD_ERROR
 #APP_CFLAGS += -DDEBUG
 APP_CFLAGS += -DOPTIMIZE
@@ -24,8 +24,8 @@ IM2COL?=1			# Selects to use or not the im2col+matmul (0=don't, 1=use)
 DMA?=0				# In case IM2COL+MM are used, select to manage IM2COL using DMA (input data/output gradient need to be in L2, im2col buffer in L1)
 HWC_LAYOUT?=0		# Choose if data layout is CHW (=0) or HWC (=1)
 # Partial im2col variable
-max_h_i2c?=1		# Forward and Input Grad
-max_w_i2c?=1		# Forward and Input Grad
+max_h_i2c?=4		# Forward and Input Grad
+max_w_i2c?=2		# Forward and Input Grad
 max_c_i2c?=1		# Weight Grad only
 # End of user settings
 

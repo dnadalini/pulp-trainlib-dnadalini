@@ -247,6 +247,7 @@ struct matMul_args {
   // For Conv2D in grad & naive
   int H;
   int W;
+  int Ch;
   int pW;
   int pH;
   int pCin;
@@ -257,6 +258,11 @@ struct matMul_args {
   int Rpad;
   int Upad;
   int Dpad;
+  // For partial im2col
+  int STEP;         // 0=FORWARD, 1=BACKWARD_GRAD, 2=BACKWARD_ERROR
+  int h_tile_size;  int h_curr_tile;
+  int w_tile_size;  int w_curr_tile;
+  int c_tile_size;  int c_curr_tile;
 };
 
 /**
