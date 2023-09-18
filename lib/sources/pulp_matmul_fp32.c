@@ -308,8 +308,8 @@ void mm_partial_i2c_CHW(void * matMul_args) {
   uint16_t T_W = args->W;
   uint16_t T_C = args->Ch;
 
-  printf("Entering special mm for partial im2col: target size = %d, [h_size, w_size] = [%d, %d], [h_curr, w_curr] = [%d, %d].\n", 
-            T_H*T_W*T_C, h_size, w_size, h_curr, w_curr);
+  //printf("Entering special mm for partial im2col: target size = %d, [h_size, w_size] = [%d, %d], [h_curr, w_curr] = [%d, %d].\n", 
+  //          T_H*T_W*T_C, h_size, w_size, h_curr, w_curr);
 
   /* 
    * FORWARD AND INPUT GRAD
@@ -320,20 +320,29 @@ void mm_partial_i2c_CHW(void * matMul_args) {
     {
       if (K == 1) 
       {
+        // Iterator to store output
+        int out_offset = -T_W+w_size-1; 
         for (uint32_t i=start; i < stop; i++) 
         {
+          out_offset = -T_W+w_size-1;
           for (uint32_t j = 0; j < M; j++) 
           {
-            C[i*M+j] = A[i*K] * B[j];
+            //C[i*M+j] = A[i*K] * B[j];
+            if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+            C[out_location] = A[i*K] * B[j];
           }
         }
       }
       else if (K > 0)
       {
         // Iterator to store output
-        int out_offset = 0;
+        int out_offset = -T_W+w_size-1;
         for (uint32_t i=start; i < stop; i++) 
         {
+          out_offset = -T_W+w_size-1;
           for (uint32_t j = 0; j < M; j++) 
           {
             float temp = 0;
@@ -341,7 +350,12 @@ void mm_partial_i2c_CHW(void * matMul_args) {
             {
                   temp += A[i*K+k] * B[j+k*M];
             } 
-            C[i*M+j] = temp;
+            //C[i*M+j] = temp;
+            if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+            C[out_location] = temp;
           } 
         } 
       }
@@ -352,11 +366,19 @@ void mm_partial_i2c_CHW(void * matMul_args) {
     {
       if (K == 1) 
       {
+        // Iterator to store output
+        int out_offset = -T_W+w_size-1;        
         for (uint32_t i=start; i < stop; i++) 
         {
+          out_offset = -T_W+w_size-1;
           for (uint32_t j = 0; j < M; j++) 
           {
-            C[i*M+j] = A[i*K] * B[j*K];
+            //C[i*M+j] = A[i*K] * B[j*K];
+            if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+            C[out_location] = A[i*K] * B[j*K];
           } 
         } 
       }
@@ -366,6 +388,7 @@ void mm_partial_i2c_CHW(void * matMul_args) {
         int out_offset = -T_W+w_size-1;
         for (uint32_t i=start; i < stop; i++) 
         {
+          out_offset = -T_W+w_size-1;
           for (uint32_t j = 0; j < M; j++) 
           {
             float temp = 0;
@@ -376,9 +399,8 @@ void mm_partial_i2c_CHW(void * matMul_args) {
             //C[i*M+j] = temp;
             if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
             else out_offset++;
-            int out_location = out_offset + w_curr*w_size;// + i*(h_size*w_size+h_curr*h_size);
-            //printf("(i=%d, j=%d) temp = %f, out_location = %d [out_offset=%d, j+w_curr*w_size=%d]\n",
-            //          i, j, temp, out_location, out_offset, j+w_curr*w_size);            
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
             C[out_location] = temp;
           } 
         } 

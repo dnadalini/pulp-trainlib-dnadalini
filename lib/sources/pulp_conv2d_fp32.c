@@ -115,7 +115,7 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
             // Matmul args
             matMul_args.A = coeffData;
             matMul_args.B = i2c_buffer;
-            matMul_args.C = outData; // + h_offset + w_offset; 
+            matMul_args.C = outData; // + h_offset; + w_offset; 
             matMul_args.N = C_out;
             matMul_args.K = pW*pH*C_in;
             matMul_args.M = max_h_i2c*max_w_i2c; //previously: (H_out*W_out);
