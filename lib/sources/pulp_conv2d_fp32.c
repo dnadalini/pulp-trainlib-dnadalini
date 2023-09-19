@@ -107,22 +107,15 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
 
             pi_cl_team_fork(NUM_CORES, pulp_im2row_fw_ig_fp32, &im2col_args);
 
-            // Partial im2col variables
-            //   int h_offset = h_idx*max_h_i2c*W_out*C_out;
-            //   int w_offset = w_idx*max_h_i2c*max_w_i2c*C_out;
-            //printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
-            //float * outMat = outData + h_offset + w_offset; 
             // Matmul args
             matMul_args.A = coeffData;
             matMul_args.B = i2c_buffer;
-            matMul_args.C = outData; // + h_offset; + w_offset; 
+            matMul_args.C = outData; 
             matMul_args.N = C_out;
             matMul_args.K = pW*pH*C_in;
             matMul_args.M = max_h_i2c*max_w_i2c; //previously: (H_out*W_out);
             matMul_args.trans_B = 1;
-            //printf("(conv2d) h_idx, w_idx = [%d, %d]: out_size = (%d), outData = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
-            //                            h_idx, w_idx, C_out*H_out*W_out, outData, outData, matMul_args.C, outData+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
-            //                            h_offset, h_offset, w_offset, w_offset);  
+
             matMul_args.STEP = 0;
             matMul_args.H = H_out;
             matMul_args.W = W_out;
@@ -134,19 +127,6 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
 
             //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
             pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
-
-            /**
-            #ifndef OPTIMIZE
-            pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-            #else
-            struct mm_manager_args man_args;
-            man_args.mm_args = &matMul_args;
-            man_args.layer_type = LAYER_CONV2D;
-            man_args.step_type = STEP_FW;
-            man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-            pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-            #endif
-            */
 
           }
           if (w_leftover > 0) {
@@ -164,42 +144,7 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
      * USE HWC DATA LAYOUT
      */
     else if (HWC_layout == 1) {
-      printf("(conv2d) HWC layout not implemented!!");
-      // // im2col on the input data
-      // im2col_args.input = C2D_args->input;
-      // im2col_args.c = C2D_args->coeff;
-      // im2col_args.output = C2D_args->output;
-      // im2col_args.pBuffer = i2c_buffer;
-      // im2col_args.Lpad = Lpad;
-      // im2col_args.Rpad = Rpad;
-      // im2col_args.Upad = Upad;
-      // im2col_args.Dpad = Dpad;
-      // im2col_args.mod = 0;
-      // im2col_args.stride_w = stride_w;
-      // im2col_args.stride_h = stride_h;
-      // im2col_args.USE_DMA = USE_DMA;
-      // im2col_args.HWC = HWC_layout;
-
-      // pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
-
-      // matMul_args.A = i2c_buffer;
-      // matMul_args.B = coeffData;
-      // matMul_args.C = outData;
-      // matMul_args.N = (W_in-pW+stride_w+Lpad+Rpad)/stride_w*(H_in-pH+stride_h+Upad+Dpad)/stride_h;
-      // matMul_args.K = pW*pH*C_in;
-      // matMul_args.M = C_out; 
-      // matMul_args.trans_B = 1;
-
-      // #ifndef OPTIMIZE
-      // pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-      // #else
-      // struct mm_manager_args man_args;
-      // man_args.mm_args = &matMul_args;
-      // man_args.layer_type = LAYER_CONV2D;
-      // man_args.step_type = STEP_FW;
-      // man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-      // pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-      // #endif     
+      printf("(conv2d) HWC layout not implemented!!");    
     }
     else {
       printf("[pulp_conv2d_fp32_fw_cl:] Invalid data layout format (HWC or CHW)!\n");
@@ -350,21 +295,15 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
 
         pi_cl_team_fork(NUM_CORES, pulp_im2row_wg_fp32, &im2col_args);
 
-        // Partial im2col variables
-        //  int c_offset = c_idx*C_out*pW*pH*max_c_i2c;
-        //printf("(conv2d) c_offset = %d\n", c_offset);
-        
         // Here, the partial im2col is done on the channels
         matMul_args.A = outDiff; 
         matMul_args.B = i2c_buffer;
-        matMul_args.C = coeffDiff; // + c_offset;
+        matMul_args.C = coeffDiff; 
         matMul_args.N = C_out; 
         matMul_args.K = H_out*W_out;
-        matMul_args.M = pW*pH*max_c_i2c; //pW*pH*C_in; 
+        matMul_args.M = pW*pH*max_c_i2c; //previously: pW*pH*C_in; 
         matMul_args.trans_B = 0;
-        //printf("(conv2d) c_idx = %d: coeffdiff_size = (%d), coeffDiff = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, c_offset = 0x%x (%d)\n", 
-        //                        c_idx,     C_out*C_in*pW*pH,   coeffDiff, coeffDiff,    matMul_args.C, coeffDiff+c_offset, &i2c_buffer, pW*pH*max_c_i2c*H_out*W_out,  
-        //                                                                                                                                            c_offset, c_offset);              
+            
         matMul_args.STEP = 1;
         matMul_args.Ch = C_in;
         matMul_args.pH = pH;
@@ -377,18 +316,6 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
         //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
         pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
 
-        /*
-        #ifndef OPTIMIZE
-        pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-        #else
-        struct mm_manager_args man_args;
-        man_args.mm_args = &matMul_args;
-        man_args.layer_type = LAYER_CONV2D;
-        man_args.step_type = STEP_WGT_GRAD;
-        man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-        pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-        #endif
-        */
       }
       if (c_leftover > 0) {
         // LEFTOVERS
@@ -399,48 +326,7 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
      * USE HWC DATA LAYOUT
      */
     else if (HWC_layout == 1) {
-      printf("(conv2d) HWC layout not implemented!!\n");
-      // im2col_args.input = C2D_args->input;
-      // im2col_args.c = C2D_args->coeff;
-      // im2col_args.output = C2D_args->output;
-      // im2col_args.pBuffer = i2c_buffer;
-      // im2col_args.Lpad = Lpad;
-      // im2col_args.Rpad = Rpad;
-      // im2col_args.Upad = Upad;
-      // im2col_args.Dpad = Dpad;
-      // im2col_args.mod = 0;
-      // im2col_args.stride_w = stride_w;
-      // im2col_args.stride_h = stride_h;
-      // im2col_args.USE_DMA = USE_DMA;
-      // im2col_args.HWC = HWC_layout;
-
-      // pi_cl_team_fork(NUM_CORES, pulp_im2col_fp32, &im2col_args);
-
-      // struct transp_args tr_args;
-      // tr_args.matrix = outDiff;
-      // tr_args.transp_matrix = tr_buffer;
-      // tr_args.M = C_out;
-      // tr_args.N = H_out*W_out;
-      // pi_cl_team_fork(NUM_CORES, transpose, &tr_args);
-
-      // matMul_args.A = tr_buffer; // outDiff;
-      // matMul_args.B = i2c_buffer;
-      // matMul_args.C = coeffDiff;
-      // matMul_args.N = C_out; 
-      // matMul_args.K = H_out*W_out;
-      // matMul_args.M = pW*pH*C_in; 
-      // matMul_args.trans_B = 1;
-
-      // #ifndef OPTIMIZE
-      // pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-      // #else
-      // struct mm_manager_args man_args;
-      // man_args.mm_args = &matMul_args;
-      // man_args.layer_type = LAYER_CONV2D;
-      // man_args.step_type = STEP_WGT_GRAD;
-      // man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-      // pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-      // #endif     
+      printf("(conv2d) HWC layout not implemented!!\n");  
     }
     else {
       printf("[pulp_conv2d_fp32_bw_param_grads_cl:] Invalid data layout format (HWC or CHW)!\n");
@@ -584,11 +470,6 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
 
           pi_cl_team_fork(NUM_CORES, pulp_im2row_fw_ig_fp32, &im2col_args);
 
-          // Partial im2col variables
-          //   int h_offset = h_idx*max_h_i2c*W_in*C_in;
-          //   int w_offset = w_idx*max_h_i2c*max_w_i2c*C_in;
-          //printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
-
           // Blocktranspose weights
           struct blocktransp_args bt_args;
           bt_args.weights = coeffData;
@@ -606,9 +487,6 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           matMul_args.K = pW*pH*C_out;
           matMul_args.M = max_h_i2c*max_w_i2c; //previously: W_in*H_in;
           matMul_args.trans_B = 1;
-          //printf("(conv2d) h_idx, w_idx = [%d, %d]: in_size = (%d), inDiff = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
-          //                            h_idx, w_idx,      C_in*H_in*W_in,  inDiff, inDiff, matMul_args.C, inDiff+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
-          //                                                                                                                                h_offset, h_offset, w_offset, w_offset);    
 
           pi_cl_team_fork(NUM_CORES, pulp_blocktransp_fp32, &bt_args);
 
@@ -624,18 +502,6 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
           pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
 
-          /*
-          #ifndef OPTIMIZE
-          pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-          #else
-          struct mm_manager_args man_args;
-          man_args.mm_args = &matMul_args;
-          man_args.layer_type = LAYER_CONV2D;
-          man_args.step_type = STEP_IN_GRAD;
-          man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-          pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-          #endif
-          */
         }
         if (w_leftover > 0) {
           // LEFTOVERS IN THE INNER LOOP
@@ -650,54 +516,7 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
      * USE HWC DATA LAYOUT
      */
     else if (HWC_layout == 1) {
-      printf("(conv2d) HWC layout not implemented!!\n");
-      // // PREPARE im2col_buffer for ACTIV_GRAD
-      // im2col_args.input = C2D_args->input;
-      // im2col_args.c = C2D_args->coeff;
-      // im2col_args.output = C2D_args->output;
-      // im2col_args.pBuffer = i2c_buffer;
-      // im2col_args.Lpad = 0; //pW-1;
-      // im2col_args.Rpad = 0; //pW-1;
-      // im2col_args.Upad = 0; //pH-1;
-      // im2col_args.Dpad = 0; //pH-1;
-      // im2col_args.stride_h = 1;
-      // im2col_args.stride_w = 1;
-      // im2col_args.mod = 1;
-      // im2col_args.USE_DMA = USE_DMA; 
-      // im2col_args.HWC = HWC_layout;
-
-      // pi_cl_team_fork(NUM_CORES, pulp_im2row_fp32, &im2col_args);
-
-      // // Blocktranspose weights
-      // struct blocktransp_args bt_args;
-      // bt_args.weights = coeffData;
-      // bt_args.bt_weights = temp_bt;
-      // bt_args.Cout = C_out;
-      // bt_args.Cin = C_in;
-      // bt_args.Hk = pH;
-      // bt_args.Wk = pW;
-      // bt_args.HWC = HWC_layout;
-
-      // matMul_args.A = i2c_buffer; 
-      // matMul_args.B = temp_bt; //coeffData;
-      // matMul_args.C = inDiff;
-      // matMul_args.N = W_in*H_in; 
-      // matMul_args.K = pW*pH*C_out;
-      // matMul_args.M = C_in;
-      // matMul_args.trans_B = 1;
-
-      // pi_cl_team_fork(NUM_CORES, pulp_blocktransp_fp32, &bt_args);
-
-      // #ifndef OPTIMIZE
-      // pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
-      // #else
-      // struct mm_manager_args man_args;
-      // man_args.mm_args = &matMul_args;
-      // man_args.layer_type = LAYER_CONV2D;
-      // man_args.step_type = STEP_IN_GRAD;
-      // man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
-      // pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
-      // #endif 
+      printf("(conv2d) HWC layout not implemented!!\n"); 
     }
     else {
       printf("[pulp_conv2d_fp32_bw_input_grads_cl:] Invalid data layout format (HWC or CHW)!\n");
