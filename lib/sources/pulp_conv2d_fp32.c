@@ -309,11 +309,11 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
 
     // Parameters for partial im2col
     int max_c_i2c = C2D_args->max_c_i2c;
-    printf("(weight grad c2d) max_c = %d\n", max_c_i2c);
+    //printf("(weight grad c2d) max_c = %d\n", max_c_i2c);
     // Iteration variables
     int c_iter = C_in / max_c_i2c;
     int c_leftover = C_in % max_c_i2c;
-    printf("(weight grad c2d) c_iter = %d, c_leftover = %d\n", c_iter, c_leftover);
+    //printf("(weight grad c2d) c_iter = %d, c_leftover = %d\n", c_iter, c_leftover);
     
   /**
    * USE OPTIMIZED ALGORITHM
@@ -350,7 +350,7 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
 
         // Partial im2col variables
         int c_offset = c_idx*C_out*pW*pH*max_c_i2c;
-        printf("(conv2d) c_offset = %d\n", c_offset);
+        //printf("(conv2d) c_offset = %d\n", c_offset);
         
         // Here, the partial im2col is done on the channels
         matMul_args.A = outDiff; 
@@ -571,8 +571,8 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           pi_cl_team_fork(NUM_CORES, pulp_im2row_fw_ig_fp32, &im2col_args);
 
           // Partial im2col variables
-          int h_offset = h_idx*max_h_i2c*W_in*C_in;
-          int w_offset = w_idx*max_h_i2c*max_w_i2c*C_in;
+          //   int h_offset = h_idx*max_h_i2c*W_in*C_in;
+          //   int w_offset = w_idx*max_h_i2c*max_w_i2c*C_in;
           //printf("(conv2d) h_offset = %d, w_offset = %d\n", h_offset, w_offset);
 
           // Blocktranspose weights
@@ -587,10 +587,10 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
 
           matMul_args.A = temp_bt; //coeffData;
           matMul_args.B = i2c_buffer;
-          matMul_args.C = inDiff + h_offset + w_offset;
+          matMul_args.C = inDiff; // + h_offset + w_offset;
           matMul_args.N = C_in;
           matMul_args.K = pW*pH*C_out;
-          matMul_args.M = max_h_i2c*max_w_i2c; //W_in*H_in;
+          matMul_args.M = max_h_i2c*max_w_i2c; //previously: W_in*H_in;
           matMul_args.trans_B = 1;
           //printf("(conv2d) h_idx, w_idx = [%d, %d]: in_size = (%d), inDiff = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, h_offset = 0x%x (%d), w_offset = 0x%x (%d)\n", 
           //                            h_idx, w_idx,      C_in*H_in*W_in,  inDiff, inDiff, matMul_args.C, inDiff+h_offset+w_offset, &i2c_buffer, pW*pH*C_in*max_h_i2c*max_w_i2c,  
@@ -598,6 +598,17 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
 
           pi_cl_team_fork(NUM_CORES, pulp_blocktransp_fp32, &bt_args);
 
+          matMul_args.STEP = 2;
+          matMul_args.H = H_in;
+          matMul_args.W = W_in;
+          matMul_args.Ch = C_in;
+          matMul_args.h_tile_size = max_h_i2c;
+          matMul_args.h_curr_tile = h_idx;
+          matMul_args.w_tile_size = max_w_i2c;
+          matMul_args.w_curr_tile = w_idx;  
+
+          pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
+          /*
           #ifndef OPTIMIZE
           pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
           #else
@@ -608,6 +619,7 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
           pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
           #endif
+          */
         }
         if (w_leftover > 0) {
           // LEFTOVERS IN THE INNER LOOP
