@@ -349,13 +349,13 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
         pi_cl_team_fork(NUM_CORES, pulp_im2row_wg_fp32, &im2col_args);
 
         // Partial im2col variables
-        int c_offset = c_idx*C_out*pW*pH*max_c_i2c;
+        //  int c_offset = c_idx*C_out*pW*pH*max_c_i2c;
         //printf("(conv2d) c_offset = %d\n", c_offset);
         
         // Here, the partial im2col is done on the channels
         matMul_args.A = outDiff; 
         matMul_args.B = i2c_buffer;
-        matMul_args.C = coeffDiff + c_offset;
+        matMul_args.C = coeffDiff; // + c_offset;
         matMul_args.N = C_out; 
         matMul_args.K = H_out*W_out;
         matMul_args.M = pW*pH*max_c_i2c; //pW*pH*C_in; 
@@ -363,7 +363,17 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
         //printf("(conv2d) c_idx = %d: coeffdiff_size = (%d), coeffDiff = 0x%x (%d), matMul_args.C = 0x%x (%d), im2col addr = 0x%x, im2col_size = %d, c_offset = 0x%x (%d)\n", 
         //                        c_idx,     C_out*C_in*pW*pH,   coeffDiff, coeffDiff,    matMul_args.C, coeffDiff+c_offset, &i2c_buffer, pW*pH*max_c_i2c*H_out*W_out,  
         //                                                                                                                                            c_offset, c_offset);              
+        matMul_args.STEP = 1;
+        matMul_args.Ch = C_in;
+        matMul_args.pH = pH;
+        matMul_args.pW = pW;
+        matMul_args.c_tile_size = max_c_i2c;
+        matMul_args.c_curr_tile = c_idx;
+        // Debugging
+        matMul_args.pCout = C_out;
 
+        pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
+        /*
         #ifndef OPTIMIZE
         pi_cl_team_fork(NUM_CORES, mm, &matMul_args);
         #else
@@ -374,7 +384,7 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
         man_args.matmul_type = opt_matmul_type; //MATMUL_TYPE;
         pi_cl_team_fork(NUM_CORES, mm_manager, &man_args);
         #endif
-
+        */
       }
       if (c_leftover > 0) {
         // LEFTOVERS

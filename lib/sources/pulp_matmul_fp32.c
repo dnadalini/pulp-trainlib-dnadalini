@@ -307,9 +307,15 @@ void mm_partial_i2c_CHW(void * matMul_args) {
   uint16_t T_H = args->H;
   uint16_t T_W = args->W;
   uint16_t T_C = args->Ch;
+  uint16_t pH = args->pH;
+  uint16_t pW = args->pW;
+  // Debugging
+  uint16_t Cout = args->pCout;
 
   //printf("Entering special mm for partial im2col: target size = %d, [h_size, w_size] = [%d, %d], [h_curr, w_curr] = [%d, %d].\n", 
   //          T_H*T_W*T_C, h_size, w_size, h_curr, w_curr);
+  //printf("Entering special mm for partial im2col: target size = %d, [c_size] = [%d], [c_curr] = [%d].\n", 
+  //          pH*pW*T_C*Cout, c_size, c_curr);
 
   /* 
    * FORWARD AND INPUT GRAD
@@ -421,7 +427,10 @@ void mm_partial_i2c_CHW(void * matMul_args) {
         {
           for (uint32_t j = 0; j < M; j++) 
           {
-            C[i*M+j] = A[i*K] * B[j];
+            //C[i*M+j] = A[i*K] * B[j];
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, A[i*K]*B[j]);
+            C[out_location] = A[i*K] * B[j];
           }
         }
       }
@@ -436,7 +445,10 @@ void mm_partial_i2c_CHW(void * matMul_args) {
             {
                   temp += A[i*K+k] * B[j+k*M];
             } 
-            C[i*M+j] = temp;
+            //C[i*M+j] = temp;
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);
+            C[out_location] = temp;
           } 
         } 
       }
@@ -451,7 +463,10 @@ void mm_partial_i2c_CHW(void * matMul_args) {
         {
           for (uint32_t j = 0; j < M; j++) 
           {
-            C[i*M+j] = A[i*K] * B[j*K];
+            //C[i*M+j] = A[i*K] * B[j*K];
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, A[i*K]*B[j*K]);
+            C[out_location] = A[i*K] * B[j*K];
           } 
         } 
       }
@@ -466,7 +481,10 @@ void mm_partial_i2c_CHW(void * matMul_args) {
             {
                 temp += A[i*K+k] * B[k+j*K];
             } 
-            C[i*M+j] = temp;
+            //C[i*M+j] = temp;
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);
+            C[out_location] = temp;
           } 
         } 
       }
