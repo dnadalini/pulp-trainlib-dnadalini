@@ -614,6 +614,26 @@ void mm_partial_i2c_CHW_unroll(void * matMul_args) {
             //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
             C[out_location] = A[i*K] * B[j*K];
           } 
+        }
+        if (N_left > 0) {
+          uint32_t j_block = (M+NUM_CORES-1) / NUM_CORES;
+          uint32_t j_start = pi_core_id()*j_block;
+          uint32_t j_stop = j_start+j_block > M ? M : j_start+j_block; 
+
+          int out_offset = -T_W+w_size-1;
+          for (uint32_t ii=N-N_left; ii<N; ii++) 
+          {
+            out_offset = -T_W+w_size-1;
+            for (uint32_t jj=j_start; jj<j_stop; jj++) 
+            {
+              //C[i*M+j] = A[i*K] * B[j*K];
+              if ((jj%w_size) == 0) out_offset += T_W - w_size + 1;
+              else out_offset++;
+              int out_location = out_offset + ii*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+              //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+              C[out_location] = A[ii*K] * B[jj*K];
+            }
+          }
         } 
       }
       else if (K > 0)
@@ -715,24 +735,80 @@ void mm_partial_i2c_CHW_unroll(void * matMul_args) {
             C[out_location] = A[i*K] * B[j];
           }
         }
+        if (N_left > 0) {
+          uint32_t j_block = (M+NUM_CORES-1) / NUM_CORES;
+          uint32_t j_start = pi_core_id()*j_block;
+          uint32_t j_stop = j_start+j_block > M ? M : j_start+j_block;
+
+          for (uint32_t ii=N-N_left; ii<N; ii++) {
+            for (uint32_t jj=j_start; jj<j_stop; jj++) {
+              //C[i*M+j] = A[i*K] * B[j];
+              int out_location = jj+c_curr*pH*pW + ii*T_C*pH*pW;
+              //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, A[i*K]*B[j]);
+              C[out_location] = A[ii*K] * B[jj];              
+            }
+          }             
+        }
       }
       else if (K > 0)
       {
-        for (uint32_t i=start; i < stop; i++) 
+        for (uint32_t i=start; i < stop; i+=2) 
         {
-          for (uint32_t j = 0; j < M; j++) 
+          for (uint32_t j = 0; j < (M & 0xfffffffe); j+=2) 
           {
-            float temp = 0;
+            float temp0 = 0;
+            float temp1 = 0;
+            float temp2 = 0;
+            float temp3 = 0;
             for (uint32_t k = 0; k < K; k++) 
             {
-                  temp += A[i*K+k] * B[j+k*M];
+                  temp0 += A[i*K+k] * B[j+k*M];
+                  temp1 += A[i*K+k] * B[j+1+k*M];
+                  temp2 += A[(i+1)*K+k] * B[j+k*M];
+                  temp3 += A[(i+1)*K+k] * B[j+1+k*M];
             } 
             //C[i*M+j] = temp;
             int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
             //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);
-            C[out_location] = temp;
+            C[out_location]                 = temp0;
+            C[out_location + 1]             = temp1;
+            C[out_location + T_C*pW*pH]     = temp2;
+            C[out_location + T_C*pW*pH + 1] = temp3;
           } 
+          if (M & 0x00000001 > 0) {
+            float temp_a = 0;
+            float temp_b = 0;
+            for (uint32_t k=0; k<K; k++) {
+              temp_a += A[i*K+k] * B[(M-1)+k*M];
+              temp_b += A[(i+1)*K+k] * B[(M-1)+k*M];
+            }
+            int out_location = (M-1)+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);
+            C[out_location]                 = temp_a;
+            C[out_location + T_C*pW*pH]     = temp_b;            
+          }
         } 
+        if (N_left > 0) {
+          uint32_t j_block = (M+NUM_CORES-1) / NUM_CORES;
+          uint32_t j_start = pi_core_id()*j_block;
+          uint32_t j_stop = j_start+j_block > M ? M : j_start+j_block; 
+
+          for (uint32_t ii=N-N_left; ii < N; ii++) 
+          {
+            for (uint32_t jj = j_start; jj < j_stop; jj++) 
+            {
+              float temp = 0;
+              for (uint32_t kk = 0; kk < K; kk++) 
+              {
+                    temp += A[ii*K+kk] * B[jj+kk*M];
+              } 
+              //C[i*M+j] = temp;
+              int out_location = jj+c_curr*pH*pW + ii*T_C*pH*pW;
+              //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);
+              C[out_location] = temp;
+            } 
+          }           
+        }
       }
     }
 
