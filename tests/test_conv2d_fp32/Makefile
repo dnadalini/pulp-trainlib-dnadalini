@@ -25,7 +25,7 @@ DMA?=0				# In case IM2COL+MM are used, select to manage IM2COL using DMA (input
 HWC_LAYOUT?=0		# Choose if data layout is CHW (=0) or HWC (=1)
 # Partial im2col variable
 max_h_i2c?=1		# Forward and Input Grad
-max_w_i2c?=1		# Forward and Input Grad
+max_w_i2c?=2		# Forward and Input Grad
 max_c_i2c?=1		# Weight Grad only
 # End of user settings
 

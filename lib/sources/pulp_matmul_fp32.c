@@ -499,6 +499,293 @@ void mm_partial_i2c_CHW(void * matMul_args) {
 
 
 
+
+
+/**
+ * UNROLLED MATMUL FOR PARTIAL IM2COL
+*/
+void mm_partial_i2c_CHW_unroll(void * matMul_args) {
+
+  struct matMul_args* args = (struct matMul_args *)matMul_args;
+  float * __restrict__ A = args->A;
+  float * __restrict__ B = args->B;
+  float * __restrict__ C = args->C;
+
+  const uint32_t N = args->N;
+  const uint32_t M = args->M;
+  const uint32_t K = args->K;
+
+  uint32_t transp = args->trans_B;
+  uint32_t N_par = N & 0xfffffffe;
+  uint32_t N_left = N - N_par;
+
+  const uint32_t blockSize = (N_par+NUM_CORES-1) / NUM_CORES;
+  const uint32_t start = pi_core_id()*blockSize;
+  const uint32_t stop = start+blockSize > N_par ? N_par : start+blockSize;
+
+  // Variables for partial im2col
+  const uint32_t STEP = args->STEP;
+  uint32_t h_size = args->h_tile_size;
+  uint32_t h_curr = args->h_curr_tile;
+  uint32_t w_size = args->w_tile_size;
+  uint32_t w_curr = args->w_curr_tile;
+  uint32_t c_size = args->c_tile_size;
+  uint32_t c_curr = args->c_curr_tile;
+  // Sizes of the tensor to be stored
+  uint16_t T_H = args->H;
+  uint16_t T_W = args->W;
+  uint16_t T_C = args->Ch;
+  uint16_t pH = args->pH;
+  uint16_t pW = args->pW;
+  // Debugging
+  uint16_t Cout = args->pCout;
+
+  //printf("Entering special mm for partial im2col: target size = %d, [h_size, w_size] = [%d, %d], [h_curr, w_curr] = [%d, %d].\n", 
+  //          T_H*T_W*T_C, h_size, w_size, h_curr, w_curr);
+  //printf("Entering special mm for partial im2col: target size = %d, [c_size] = [%d], [c_curr] = [%d].\n", 
+  //          pH*pW*T_C*Cout, c_size, c_curr);
+
+  /* 
+   * FORWARD AND INPUT GRAD
+  */
+  if (STEP == 0 || STEP == 2) {
+    // =====> B NOT TRANSPOSED <=====
+    if (transp==0)
+    {
+      if (K == 1) 
+      {
+        // Iterator to store output
+        int out_offset = -T_W+w_size-1; 
+        for (uint32_t i=start; i < stop; i++) 
+        {
+          out_offset = -T_W+w_size-1;
+          for (uint32_t j = 0; j < M; j++) 
+          {
+            //C[i*M+j] = A[i*K] * B[j];
+            if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+            C[out_location] = A[i*K] * B[j];
+          }
+        }
+      }
+      else if (K > 0)
+      {
+        // Iterator to store output
+        int out_offset = -T_W+w_size-1;
+        for (uint32_t i=start; i < stop; i++) 
+        {
+          out_offset = -T_W+w_size-1;
+          for (uint32_t j = 0; j < M; j++) 
+          {
+            float temp = 0;
+            for (uint32_t k = 0; k < K; k++) 
+            {
+                  temp += A[i*K+k] * B[j+k*M];
+            } 
+            //C[i*M+j] = temp;
+            if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+            C[out_location] = temp;
+          } 
+        } 
+      }
+    }
+
+    // =====> B IS TRANSPOSED <=====  
+    else 
+    {
+      if (K == 1) 
+      {
+        // Iterator to store output
+        int out_offset = -T_W+w_size-1;        
+        for (uint32_t i=start; i < stop; i++) 
+        {
+          out_offset = -T_W+w_size-1;
+          for (uint32_t j = 0; j < M; j++) 
+          {
+            //C[i*M+j] = A[i*K] * B[j*K];
+            if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+            C[out_location] = A[i*K] * B[j*K];
+          } 
+        } 
+      }
+      else if (K > 0)
+      {
+        // Iterator to store output
+        int out_offset = -T_W+w_size-1;
+        for (uint32_t i=start; i < stop; i+=2) 
+        {
+          out_offset = -T_W+w_size-1;
+          for (uint32_t j = 0; j < (M & 0xfffffffe); j+=2) 
+          {
+            float temp0 = 0;
+            float temp1 = 0;
+            float temp2 = 0;
+            float temp3 = 0;
+            for (uint32_t k = 0; k < K; k++) 
+            {
+                temp0 += A[i*K+k] * B[k+j*K];
+                temp1 += A[i*K+k] * B[k+(j+1)*K];
+                temp2 += A[(i+1)*K+k] * B[k+j*K];
+                temp3 += A[(i+1)*K+k] * B[k+(j+1)*K];
+            } 
+            //C[i*M+j] = temp;
+            if ((j%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp0);            
+            C[out_location]           = temp0;
+            C[out_location + T_H*T_W] = temp2;
+            if (((j+1)%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp1);            
+            C[out_location]           = temp1;
+            C[out_location + T_H*T_W] = temp3; 
+          }
+          if (M & 0x00000001) {
+            float temp_a = 0;
+            float temp_b = 0;
+            for (uint32_t k = 0; k < K; k++) 
+            {
+                temp_a += A[i*K+k] * B[k+(M-1)*K];
+                temp_b += A[(i+1)*K+k] * B[k+(M-1)*K];
+            }
+            if (((M-1)%w_size) == 0) out_offset += T_W - w_size + 1;
+            else out_offset++;
+            int out_location = out_offset + i*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, (M-1), out_location, temp);            
+            C[out_location]           = temp_a;  
+            C[out_location + T_H*T_W] = temp_b;                                
+          } 
+        }
+        if (N_left > 0) {
+          uint32_t j_block = (M+NUM_CORES-1) / NUM_CORES;
+          uint32_t j_start = pi_core_id()*j_block;
+          uint32_t j_stop = j_start+j_block > M ? M : j_start+j_block;
+        
+          int out_offset = -T_W+w_size-1;
+          for (uint32_t ii=N-N_left; ii < stop; ii++) 
+          {
+            out_offset = -T_W+w_size-1;
+            for (uint32_t jj = j_start; jj < j_stop; jj++) 
+            {
+              float temp = 0;
+              for (uint32_t kk = 0; kk < K; kk++) 
+              {
+                  temp += A[ii*K+kk] * B[kk+jj*K];
+              } 
+              //C[i*M+j] = temp;
+              if ((jj%w_size) == 0) out_offset += T_W - w_size + 1;
+              else out_offset++;
+              int out_location = out_offset + ii*T_H*T_W + w_curr*w_size + h_curr*h_size*T_W;
+              //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);            
+              C[out_location] = temp;
+            } 
+          } 
+
+        } 
+      }
+    }
+  }
+
+  /* 
+   * WEIGHT GRAD
+  */
+  if (STEP == 1) {
+    // =====> B NOT TRANSPOSED <=====
+    if (transp==0)
+    {
+      if (K == 1) 
+      {
+        for (uint32_t i=start; i < stop; i++) 
+        {
+          for (uint32_t j = 0; j < M; j++) 
+          {
+            //C[i*M+j] = A[i*K] * B[j];
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, A[i*K]*B[j]);
+            C[out_location] = A[i*K] * B[j];
+          }
+        }
+      }
+      else if (K > 0)
+      {
+        for (uint32_t i=start; i < stop; i++) 
+        {
+          for (uint32_t j = 0; j < M; j++) 
+          {
+            float temp = 0;
+            for (uint32_t k = 0; k < K; k++) 
+            {
+                  temp += A[i*K+k] * B[j+k*M];
+            } 
+            //C[i*M+j] = temp;
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);
+            C[out_location] = temp;
+          } 
+        } 
+      }
+    }
+
+    // =====> B IS TRANSPOSED <=====  
+    else 
+    {
+      if (K == 1) 
+      {
+        for (uint32_t i=start; i < stop; i++) 
+        {
+          for (uint32_t j = 0; j < M; j++) 
+          {
+            //C[i*M+j] = A[i*K] * B[j*K];
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, A[i*K]*B[j*K]);
+            C[out_location] = A[i*K] * B[j*K];
+          } 
+        } 
+      }
+      else if (K > 0)
+      {
+        for (uint32_t i=start; i < stop; i++) 
+        {
+          for (uint32_t j = 0; j < M; j++) 
+          {
+            float temp = 0;
+            for (uint32_t k = 0; k < K; k++) 
+            {
+                temp += A[i*K+k] * B[k+j*K];
+            } 
+            //C[i*M+j] = temp;
+            int out_location = j+c_curr*pH*pW + i*T_C*pH*pW;
+            //printf("(i=%d, j=%d) C[%d] = %f\n", i, j, out_location, temp);
+            C[out_location] = temp;
+          } 
+        } 
+      }
+    }
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 // Matmul for depthwise convolutions
 void mm_dw(void * matMul_DW_args) {
 

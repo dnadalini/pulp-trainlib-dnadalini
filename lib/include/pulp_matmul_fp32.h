@@ -49,12 +49,28 @@ void mm_M(
 );
 
 /**
+ * MATMULS FOR PARTIAL IM2COL
+*/
+
+/**
  * @brief Naive matrix multiply algorithm, with custom output location in C to correctly store the tiles produced with partial im2col. Parallelizes on N.
  * @param matMul_args pointer to a matMul_args structure (please refer to this to setup the args)
 */
 void mm_partial_i2c_CHW(
     void * matMul_args
 );
+
+/**
+ * @brief Naive matrix multiply algorithm, with custom output location in C to correctly store the tiles produced with partial im2col. Parallelizes on N.
+ * @param matMul_args pointer to a matMul_args structure (please refer to this to setup the args)
+*/
+void mm_partial_i2c_CHW_unroll(
+    void * matMul_args
+);
+
+/**
+ * END OF PARTIAL IM2COL
+*/
 
 /**
  * @brief Matrix multiply for depthwise convolution. 
