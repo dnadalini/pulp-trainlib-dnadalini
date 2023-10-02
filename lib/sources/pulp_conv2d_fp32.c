@@ -125,8 +125,8 @@ void pulp_conv2d_fp32_fw_cl( void * Conv2D_args )
             matMul_args.w_tile_size = max_w_i2c;
             matMul_args.w_curr_tile = w_idx;                                                                                                                          
 
-            //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
-            pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
+            pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
+            //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
 
           }
           if (w_leftover > 0) {
@@ -313,8 +313,8 @@ void pulp_conv2d_fp32_bw_param_grads_cl( void * Conv2D_args )
         // Debugging
         matMul_args.pCout = C_out;
 
-        //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
-        pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
+        pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
+        //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
 
       }
       if (c_leftover > 0) {
@@ -499,8 +499,8 @@ void pulp_conv2d_fp32_bw_input_grads_cl( void * Conv2D_args )
           matMul_args.w_tile_size = max_w_i2c;
           matMul_args.w_curr_tile = w_idx;  
 
-          //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
-          pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
+          pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW, &matMul_args);
+          //pi_cl_team_fork(NUM_CORES, mm_partial_i2c_CHW_unroll, &matMul_args);
 
         }
         if (w_leftover > 0) {
